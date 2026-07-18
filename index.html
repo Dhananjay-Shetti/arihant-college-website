@@ -35,7 +35,10 @@
 <nav class="site-nav">
   <div class="container">
     <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
-    <ul class="nav-links">
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="hamburger"><span></span><span></span><span></span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a href="admissions.html">Admissions</a></li>
       <li><a href="fees.html">Fees</a></li>
@@ -46,6 +49,7 @@
     </ul>
   </div>
 </nav>
+<div class="nav-backdrop" id="nav-backdrop"></div>
 
 <main id="main">
   <section class="hero">
@@ -167,6 +171,7 @@
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="assets/js/nav.js"></script>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/whatsapp.js"></script>
