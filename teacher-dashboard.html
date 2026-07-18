@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Teacher Dashboard — Arihant College</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<style>
+  .class-pill {
+    display:flex; justify-content:space-between; align-items:center;
+    padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm);
+    background: var(--glass); border: 1px solid var(--border); cursor: pointer;
+    margin-bottom: var(--space-3); transition: all 0.2s var(--ease);
+  }
+  .class-pill:hover, .class-pill.active { border-color: var(--border-bright); background: rgba(26,114,204,0.12); }
+  .roster-row { display:flex; justify-content:space-between; align-items:center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); gap: var(--space-3); flex-wrap: wrap; }
+  .roster-row:last-child { border-bottom: none; }
+  .status-toggle { display:flex; gap: var(--space-2); }
+  .status-btn {
+    padding: var(--space-2) var(--space-4); border-radius: 999px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; cursor:pointer; min-height: auto;
+  }
+  .status-btn.present.active { background: rgba(52,201,142,0.15); color: var(--success); border-color: rgba(52,201,142,0.4); }
+  .status-btn.absent.active { background: rgba(239,106,106,0.15); color: var(--error); border-color: rgba(239,106,106,0.4); }
+</style>
+</head>
+<body>
+<div class="page-loader-overlay" id="page-loader"><span class="spinner spinner-lg"></span></div>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li id="nav-name" style="color:var(--white);"></li>
+      <li><button class="btn btn-outline" id="logout-btn" style="padding: var(--space-2) var(--space-4); min-height:auto;">Logout</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-7) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>Teacher Dashboard</span>
+      <h1 data-reveal id="welcome-heading">Welcome</h1>
+      <p class="lead" data-reveal>Select a class to mark today's attendance.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container grid grid-2">
+      <div class="card" data-reveal>
+        <h3>Your Classes</h3>
+        <div id="class-list"><p class="form-note">Loading…</p></div>
+      </div>
+
+      <div class="card" data-reveal>
+        <h3 id="roster-heading">Attendance</h3>
+        <div class="field" id="date-field" style="display:none;">
+          <label for="attendance-date">Date</label>
+          <input id="attendance-date" type="date" />
+        </div>
+        <div id="roster-alert"></div>
+        <div id="roster-list"><p class="form-note">Pick a class to load the roster.</p></div>
+        <button class="btn btn-primary btn-block" id="save-attendance-btn" style="display:none; margin-top: var(--space-4);">Save Attendance</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="index.html">Home</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/session.js"></script>
+<script src="assets/js/loader.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  const session = Session.require(["teacher"]);
+  let currentCourse = null;
+  let rosterState = {}; // studentId -> "Present" | "Absent"
+
+  function todayStr() {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+  }
+
+  async function loadRoster(courseId) {
+    currentCourse = courseId;
+    document.querySelectorAll(".class-pill").forEach((el) => el.classList.toggle("active", el.dataset.course === courseId));
+    document.getElementById("date-field").style.display = "block";
+    document.getElementById("save-attendance-btn").style.display = "block";
+    document.getElementById("roster-heading").textContent = "Attendance — " + courseId;
+
+    const dateInput = document.getElementById("attendance-date");
+    if (!dateInput.value) dateInput.value = todayStr();
+
+    const rosterEl = document.getElementById("roster-list");
+    rosterEl.innerHTML = `<div class="loading-row"><span class="spinner"></span><span>Loading roster…</span></div>`;
+
+    const res = await Api.getTeacherStudents(session.token, courseId, dateInput.value);
+    if (!res.ok) {
+      rosterEl.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+
+    rosterState = {};
+    res.data.students.forEach((s) => { rosterState[s.studentId] = s.status || "Present"; });
+
+    rosterEl.innerHTML = res.data.students.length
+      ? res.data.students.map((s) => `
+          <div class="roster-row" data-student="${s.studentId}">
+            <span>${s.name} <span class="form-note">(${s.admissionId})</span></span>
+            <div class="status-toggle">
+              <button type="button" class="status-btn present ${rosterState[s.studentId] === "Present" ? "active" : ""}" data-status="Present">Present</button>
+              <button type="button" class="status-btn absent ${rosterState[s.studentId] === "Absent" ? "active" : ""}" data-status="Absent">Absent</button>
+            </div>
+          </div>`).join("")
+      : `<p class="form-note">No students enrolled in this course yet.</p>`;
+
+    rosterEl.querySelectorAll(".roster-row").forEach((row) => {
+      const studentId = row.dataset.student;
+      row.querySelectorAll(".status-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          rosterState[studentId] = btn.dataset.status;
+          row.querySelectorAll(".status-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        });
+      });
+    });
+  }
+
+  document.getElementById("attendance-date").addEventListener("change", () => {
+    if (currentCourse) loadRoster(currentCourse);
+  });
+
+  document.getElementById("save-attendance-btn").addEventListener("click", async () => {
+    const alertBox = document.getElementById("roster-alert");
+    const records = Object.keys(rosterState).map((studentId) => ({ studentId, status: rosterState[studentId] }));
+    if (!records.length) return;
+
+    const btn = document.getElementById("save-attendance-btn");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner spinner-dark"></span> Saving…`;
+
+    const res = await Api.markAttendance(session.token, currentCourse, document.getElementById("attendance-date").value, records);
+
+    btn.disabled = false;
+    btn.textContent = "Save Attendance";
+
+    alertBox.innerHTML = res.ok
+      ? `<div class="alert alert-success">Attendance saved for ${res.data.saved} student(s).</div>`
+      : `<div class="alert alert-error">${res.error}</div>`;
+  });
+
+  (async () => {
+    if (!session) return;
+    document.getElementById("nav-name").textContent = session.name;
+    document.getElementById("logout-btn").addEventListener("click", () => Session.logout());
+
+    const res = await Api.getTeacherDashboard(session.token);
+    Loader.hide();
+    if (!res.ok) {
+      document.querySelector("main .container").innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+
+    document.getElementById("welcome-heading").textContent = `Welcome, ${res.data.name.split(" ")[0]}`;
+
+    const classListEl = document.getElementById("class-list");
+    classListEl.innerHTML = res.data.classes.length
+      ? res.data.classes.map((c) => `
+          <div class="class-pill" data-course="${c.courseId}">
+            <span>${c.courseName}</span>
+            <span class="badge">${c.studentCount} students</span>
+          </div>`).join("")
+      : `<p class="form-note">No classes assigned yet.</p>`;
+
+    classListEl.querySelectorAll(".class-pill").forEach((el) => {
+      el.addEventListener("click", () => loadRoster(el.dataset.course));
+    });
+
+    window.initReveal();
+  })();
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

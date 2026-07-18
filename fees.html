@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fee Payment — Arihant College</title>
+<meta name="description" content="Pay your Arihant College course fees online via PhonePe." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="admissions.html">Admissions</a></li>
+      <li><a href="fees.html">Fees</a></li>
+      <li><a href="status.html">Check Status</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="login.html">Login</a></li>
+      <li><a class="nav-cta" href="admissions.html">Apply Now</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-8) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>Fee Payment</span>
+      <h1 data-reveal>Pay Your Fees</h1>
+      <p class="lead" data-reveal>Select your course and fee term, then pay securely. <span class="mock-tag">PhonePe mock — no real transaction</span></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container" style="max-width: 640px;">
+      <div class="stepper" data-reveal>
+        <div class="step active" id="step-1">1. Course</div>
+        <div class="step" id="step-2">2. Fee Plan</div>
+        <div class="step" id="step-3">3. Your Details</div>
+        <div class="step" id="step-4">4. Pay</div>
+      </div>
+
+      <div id="pay-alert"></div>
+
+      <div class="card" data-reveal>
+        <form id="pay-form">
+          <div class="field">
+            <label for="course">Course *</label>
+            <select id="course" name="courseId" required disabled><option>Loading courses…</option></select>
+          </div>
+
+          <div class="field">
+            <label for="fee">Fee Plan *</label>
+            <select id="fee" name="feeId" required disabled>
+              <option value="">Select a course first</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="name">Student Name *</label>
+            <input id="name" name="studentName" type="text" required />
+          </div>
+          <div class="field">
+            <label for="phone">Mobile Number *</label>
+            <input id="phone" name="studentPhone" type="tel" pattern="[6-9][0-9]{9}" required />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="studentEmail" type="email" />
+          </div>
+
+          <div id="amount-card" style="display:none; margin-bottom: var(--space-5); padding: var(--space-4); border-radius: var(--radius-sm); background: rgba(212,169,58,0.08); border: 1px solid rgba(212,169,58,0.25);">
+            <p style="margin-bottom:0; color:var(--text-muted);">Amount Payable</p>
+            <h2 id="amount-display" style="margin:0;">₹0</h2>
+          </div>
+
+          <button class="btn btn-primary btn-block" type="submit" id="pay-btn" disabled>
+            Pay via PhonePe (Mock)
+          </button>
+          <p class="form-note" style="text-align:center; margin-top: var(--space-3);">Payments are processed securely via PhonePe. This is a placeholder integration — no real money moves.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="admissions.html">Admissions</a></li><li><a href="status.html">Check Status</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  let feePlans = [];
+
+  function urlParam(key) {
+    return new URLSearchParams(window.location.search).get(key);
+  }
+
+  function setStep(n) {
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById("step-" + i).classList.toggle("active", i <= n);
+    }
+  }
+
+  async function loadCourses() {
+    const res = await Api.getCourses();
+    const select = document.getElementById("course");
+    select.disabled = false;
+    if (!res.ok) {
+      select.innerHTML = `<option value="">Failed to load courses</option>`;
+      return;
+    }
+    select.innerHTML = `<option value="">Select a course</option>` +
+      res.data.map((c) => `<option value="${c.CourseId}">${c.Name}</option>`).join("");
+
+    const preselect = urlParam("course");
+    if (preselect) {
+      select.value = preselect;
+      select.dispatchEvent(new Event("change"));
+    }
+  }
+
+  async function loadFeePlans(courseId) {
+    const feeSelect = document.getElementById("fee");
+    feeSelect.disabled = true;
+    document.getElementById("amount-card").style.display = "none";
+    document.getElementById("pay-btn").disabled = true;
+
+    if (!courseId) {
+      feeSelect.innerHTML = `<option value="">Select a course first</option>`;
+      return;
+    }
+    feeSelect.innerHTML = `<option value="">Loading…</option>`;
+    const res = await Api.getFeeStructure(courseId);
+    if (!res.ok || res.data.length === 0) {
+      feeSelect.innerHTML = `<option value="">No fee plans available</option>`;
+      return;
+    }
+    feePlans = res.data;
+    feeSelect.innerHTML = `<option value="">Select a fee plan</option>` +
+      feePlans.map((f) => `<option value="${f.FeeId}">${f.Term} — ₹${f.Amount.toLocaleString("en-IN")} (due ${f.DueDate})</option>`).join("");
+    feeSelect.disabled = false;
+    setStep(2);
+  }
+
+  document.getElementById("course").addEventListener("change", (e) => {
+    loadFeePlans(e.target.value);
+  });
+
+  document.getElementById("fee").addEventListener("change", (e) => {
+    const fee = feePlans.find((f) => f.FeeId === e.target.value);
+    const amountCard = document.getElementById("amount-card");
+    const payBtn = document.getElementById("pay-btn");
+    if (fee) {
+      amountCard.style.display = "block";
+      document.getElementById("amount-display").textContent = "₹" + fee.Amount.toLocaleString("en-IN");
+      payBtn.disabled = false;
+      setStep(3);
+    } else {
+      amountCard.style.display = "none";
+      payBtn.disabled = true;
+    }
+  });
+
+  document.getElementById("pay-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const fee = feePlans.find((f) => f.FeeId === form.feeId.value);
+    if (!fee) return;
+
+    const alertBox = document.getElementById("pay-alert");
+    alertBox.innerHTML = `<div class="loading-row"><span class="spinner"></span><span>Contacting PhonePe (mock)…</span></div>`;
+    setStep(4);
+
+    const res = await Api.initiatePhonePePayment({
+      studentName: form.studentName.value.trim(),
+      studentPhone: form.studentPhone.value.trim(),
+      studentEmail: form.studentEmail.value.trim(),
+      courseId: form.courseId.value,
+      feeId: form.feeId.value,
+      amount: fee.Amount,
+    });
+
+    if (res.ok) {
+      window.location.href = res.data.redirectUrl;
+    } else {
+      alertBox.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+    }
+  });
+
+  loadCourses();
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

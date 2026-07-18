@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Dashboard — Arihant College</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<style>
+  .stat-value { font-size: 2rem; font-weight: 700; color: var(--white); margin: 0; }
+  .stat-label { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+  .notice-row { display:flex; justify-content:space-between; align-items:flex-start; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+  .notice-row:last-child { border-bottom: none; }
+  .notice-actions { display:flex; gap: var(--space-2); flex-shrink:0; }
+  .notice-actions button { padding: var(--space-2) var(--space-3); min-height:auto; font-size:0.8rem; }
+  .enquiry-row { display:flex; justify-content:space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--border); font-size:0.9rem; }
+  .enquiry-row:last-child { border-bottom:none; }
+</style>
+</head>
+<body>
+<div class="page-loader-overlay" id="page-loader"><span class="spinner spinner-lg"></span></div>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li id="nav-name" style="color:var(--white);"></li>
+      <li><button class="btn btn-outline" id="logout-btn" style="padding: var(--space-2) var(--space-4); min-height:auto;">Logout</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-7) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>Admin Dashboard</span>
+      <h1 data-reveal>Overview</h1>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="grid grid-4" id="stats" style="margin-bottom: var(--space-7);">
+        <div class="loading-row"><span class="spinner"></span><span>Loading…</span></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom: var(--space-7);">
+        <div class="card" data-reveal>
+          <h3>Recent Enquiries</h3>
+          <div id="enquiries-list"><div class="loading-row"><span class="spinner"></span><span>Loading…</span></div></div>
+        </div>
+
+        <div class="card" data-reveal>
+          <h3>Homepage Content</h3>
+          <p class="form-note">Controls the hero section on the public homepage.</p>
+          <div id="settings-alert"></div>
+          <form id="settings-form">
+            <div class="field">
+              <label for="hero_eyebrow">Eyebrow tag</label>
+              <input id="hero_eyebrow" name="hero_eyebrow" type="text" />
+            </div>
+            <div class="field">
+              <label for="hero_title">Hero title</label>
+              <input id="hero_title" name="hero_title" type="text" />
+            </div>
+            <div class="field">
+              <label for="hero_subtitle">Hero subtitle</label>
+              <textarea id="hero_subtitle" name="hero_subtitle" rows="3"></textarea>
+            </div>
+            <button class="btn btn-primary btn-block" type="submit">Save Homepage Content</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card" data-reveal>
+        <h3>Notices <span class="form-note">— shown on the homepage</span></h3>
+        <div id="notice-alert"></div>
+        <div id="notices-list" style="margin-bottom: var(--space-5);"><div class="loading-row"><span class="spinner"></span><span>Loading…</span></div></div>
+
+        <form id="notice-form">
+          <input type="hidden" id="notice-id" />
+          <div class="field">
+            <label for="notice-title">Title</label>
+            <input id="notice-title" type="text" required />
+          </div>
+          <div class="field">
+            <label for="notice-body">Body</label>
+            <textarea id="notice-body" rows="3" required></textarea>
+          </div>
+          <div class="field">
+            <label for="notice-order">Display order</label>
+            <input id="notice-order" type="number" value="1" min="1" />
+          </div>
+          <button class="btn btn-primary" type="submit" id="notice-submit-btn">Add Notice</button>
+          <button class="btn btn-outline" type="button" id="notice-cancel-btn" style="display:none;">Cancel Edit</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="index.html">Home</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/session.js"></script>
+<script src="assets/js/loader.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  const session = Session.require(["admin"]);
+
+  async function loadDashboard() {
+    const res = await Api.getAdminDashboard(session.token);
+    if (!res.ok) {
+      document.querySelector("main .container").innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+    const d = res.data;
+    document.getElementById("stats").innerHTML = `
+      <div class="card" data-reveal><p class="stat-label">Fees Collected</p><p class="stat-value">₹${d.totalFeesCollected.toLocaleString("en-IN")}</p></div>
+      <div class="card" data-reveal><p class="stat-label">Fees Pending</p><p class="stat-value">₹${d.pendingFees.toLocaleString("en-IN")}</p></div>
+      <div class="card" data-reveal><p class="stat-label">Total Students</p><p class="stat-value">${d.totalStudents}</p></div>
+      <div class="card" data-reveal><p class="stat-label">Avg. Attendance</p><p class="stat-value">${d.avgAttendancePercent === null ? "—" : d.avgAttendancePercent + "%"}</p></div>
+    `;
+
+    const enquiriesEl = document.getElementById("enquiries-list");
+    enquiriesEl.innerHTML = d.recentEnquiries.length
+      ? d.recentEnquiries.map((en) => `
+          <div class="enquiry-row">
+            <span>${en.name} <span class="form-note">(${en.courseInterest || "—"})</span></span>
+            <span class="badge">${en.status}</span>
+          </div>`).join("")
+      : `<p class="form-note">No enquiries yet.</p>`;
+
+    window.initReveal();
+  }
+
+  async function loadSettings() {
+    const res = await Api.getSettings();
+    if (!res.ok) return;
+    document.getElementById("hero_eyebrow").value = res.data.hero_eyebrow || "";
+    document.getElementById("hero_title").value = res.data.hero_title || "";
+    document.getElementById("hero_subtitle").value = res.data.hero_subtitle || "";
+  }
+
+  let notices = [];
+
+  async function loadNotices() {
+    const res = await Api.getAdminNotices(session.token);
+    const el = document.getElementById("notices-list");
+    if (!res.ok) {
+      el.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+    notices = res.data;
+    el.innerHTML = notices.length
+      ? notices.map((n) => `
+          <div class="notice-row">
+            <div>
+              <strong>${n.Title}</strong> ${String(n.Active).toUpperCase() !== "TRUE" ? '<span class="badge badge-pending">Inactive</span>' : ""}
+              <p class="form-note" style="margin:0;">${n.Body}</p>
+            </div>
+            <div class="notice-actions">
+              <button class="btn btn-outline" data-edit="${n.NoticeId}">Edit</button>
+              <button class="btn btn-outline" data-delete="${n.NoticeId}" style="color:var(--error); border-color: rgba(239,106,106,0.4);">Delete</button>
+            </div>
+          </div>`).join("")
+      : `<p class="form-note">No notices yet.</p>`;
+
+    el.querySelectorAll("[data-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const n = notices.find((x) => x.NoticeId === btn.dataset.edit);
+        document.getElementById("notice-id").value = n.NoticeId;
+        document.getElementById("notice-title").value = n.Title;
+        document.getElementById("notice-body").value = n.Body;
+        document.getElementById("notice-order").value = n.Order || 1;
+        document.getElementById("notice-submit-btn").textContent = "Update Notice";
+        document.getElementById("notice-cancel-btn").style.display = "inline-flex";
+        window.scrollTo({ top: document.getElementById("notice-form").offsetTop - 100, behavior: "smooth" });
+      });
+    });
+    el.querySelectorAll("[data-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this notice?")) return;
+        const res = await Api.deleteAdminNotice(session.token, btn.dataset.delete);
+        document.getElementById("notice-alert").innerHTML = res.ok
+          ? `<div class="alert alert-success">Notice deleted.</div>`
+          : `<div class="alert alert-error">${res.error || "Could not delete."}</div>`;
+        loadNotices();
+      });
+    });
+  }
+
+  document.getElementById("notice-cancel-btn").addEventListener("click", () => {
+    document.getElementById("notice-form").reset();
+    document.getElementById("notice-id").value = "";
+    document.getElementById("notice-submit-btn").textContent = "Add Notice";
+    document.getElementById("notice-cancel-btn").style.display = "none";
+  });
+
+  document.getElementById("notice-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const noticeId = document.getElementById("notice-id").value || undefined;
+    const res = await Api.saveAdminNotice(session.token, {
+      noticeId,
+      title: document.getElementById("notice-title").value.trim(),
+      body: document.getElementById("notice-body").value.trim(),
+      order: Number(document.getElementById("notice-order").value) || 1,
+      active: true,
+    });
+    document.getElementById("notice-alert").innerHTML = res.ok
+      ? `<div class="alert alert-success">Notice saved.</div>`
+      : `<div class="alert alert-error">${res.error}</div>`;
+    if (res.ok) {
+      document.getElementById("notice-form").reset();
+      document.getElementById("notice-id").value = "";
+      document.getElementById("notice-submit-btn").textContent = "Add Notice";
+      document.getElementById("notice-cancel-btn").style.display = "none";
+      loadNotices();
+    }
+  });
+
+  document.getElementById("settings-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const res = await Api.saveAdminSettings(session.token, {
+      hero_eyebrow: document.getElementById("hero_eyebrow").value,
+      hero_title: document.getElementById("hero_title").value,
+      hero_subtitle: document.getElementById("hero_subtitle").value,
+    });
+    document.getElementById("settings-alert").innerHTML = res.ok
+      ? `<div class="alert alert-success">Homepage content updated.</div>`
+      : `<div class="alert alert-error">${res.error}</div>`;
+  });
+
+  (async () => {
+    if (!session) return;
+    document.getElementById("nav-name").textContent = session.name;
+    document.getElementById("logout-btn").addEventListener("click", () => Session.logout());
+    await Promise.all([loadDashboard(), loadSettings(), loadNotices()]);
+    Loader.hide();
+  })();
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

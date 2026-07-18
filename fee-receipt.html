@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fee Receipt — Arihant College</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<style>
+  .receipt {
+    max-width: 560px; margin: 0 auto; background: #ffffff; color: #101418;
+    border-radius: var(--radius); padding: var(--space-7); box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  .receipt h2 { color: #0b2545; }
+  .receipt .row { display:flex; justify-content:space-between; padding: var(--space-3) 0; border-bottom: 1px solid #e5e8ec; }
+  .receipt .row:last-child { border-bottom: none; }
+  .receipt .label { color: #5b6572; }
+  .receipt .amount { font-size: 2rem; font-weight: 700; color: #1e8e5a; text-align:center; margin: var(--space-5) 0; }
+  .receipt .paid-stamp {
+    display:inline-block; border: 3px solid #1e8e5a; color: #1e8e5a; font-weight: 700;
+    padding: 4px 16px; border-radius: 8px; transform: rotate(-6deg); letter-spacing: 0.08em; margin-bottom: var(--space-4);
+  }
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+    .receipt { box-shadow: none; margin: 0; max-width: none; }
+  }
+</style>
+</head>
+<body>
+<nav class="site-nav no-print">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="student-dashboard.html">Back to Dashboard</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section>
+    <div class="container">
+      <div class="receipt" id="receipt-card">
+        <div class="loading-row" style="justify-content:center;"><span class="spinner"></span><span>Loading receipt…</span></div>
+      </div>
+      <div class="container no-print" style="max-width:560px; text-align:center; margin-top: var(--space-5);">
+        <button class="btn btn-primary" id="print-btn">Download / Print Receipt</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/session.js"></script>
+<script>
+  const session = Session.require(["student"]);
+  const orderId = new URLSearchParams(window.location.search).get("orderId");
+
+  function formatDate(d) {
+    return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+  }
+
+  (async () => {
+    if (!session) return;
+    const card = document.getElementById("receipt-card");
+    if (!orderId) {
+      card.innerHTML = `<p>No order specified.</p>`;
+      return;
+    }
+
+    const res = await Api.getFeeReceipt(session.token, orderId);
+    if (!res.ok) {
+      card.innerHTML = `<p>${res.error}</p>`;
+      return;
+    }
+
+    const r = res.data;
+    card.innerHTML = `
+      <span class="paid-stamp">PAID</span>
+      <h2>Arihant College</h2>
+      <p class="label" style="margin-bottom: var(--space-5);">Official Fee Payment Receipt</p>
+      <div class="amount">₹${Number(r.amount).toLocaleString("en-IN")}</div>
+      <div class="row"><span class="label">Order ID</span><span>${r.orderId}</span></div>
+      <div class="row"><span class="label">Student Name</span><span>${r.studentName}</span></div>
+      <div class="row"><span class="label">Admission ID</span><span>${r.admissionId}</span></div>
+      <div class="row"><span class="label">Course</span><span>${r.courseName}</span></div>
+      <div class="row"><span class="label">Term</span><span>${r.term}</span></div>
+      <div class="row"><span class="label">Paid On</span><span>${formatDate(r.paidOn)}</span></div>
+      <div class="row"><span class="label">Payment Method</span><span>PhonePe</span></div>
+    `;
+  })();
+
+  document.getElementById("print-btn").addEventListener("click", () => window.print());
+</script>
+</body>
+</html>

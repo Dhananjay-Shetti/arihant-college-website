@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Arihant College — Admissions Open</title>
+<meta name="description" content="Arihant College — modern campus, industry-aligned courses, and 92% placement record. Apply online today." />
+<meta property="og:title" content="Arihant College" />
+<meta property="og:description" content="Modern campus, industry-aligned courses, strong placements." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+  #campus-map { height: 380px; border-radius: var(--radius); border: 1px solid var(--border); z-index: 1; }
+  .leaflet-popup-content-wrapper { background: var(--navy-2); color: var(--white); border-radius: var(--radius-sm); }
+  .leaflet-popup-tip { background: var(--navy-2); }
+  .leaflet-popup-content a { color: var(--gold-bright); }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollegeOrUniversity",
+  "name": "Arihant College",
+  "address": { "@type": "PostalAddress", "addressCountry": "IN" }
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="admissions.html">Admissions</a></li>
+      <li><a href="fees.html">Fees</a></li>
+      <li><a href="status.html">Check Status</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="login.html">Login</a></li>
+      <li><a class="nav-cta" href="admissions.html">Apply Now</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow" data-reveal id="hero-eyebrow">Admissions Open — 2026 Batch</span>
+      <h1 data-reveal id="hero-title">Shape Your Future at Arihant College</h1>
+      <p class="lead" data-reveal id="hero-subtitle">Modern campus. Industry-aligned courses. A placement record that speaks for itself.</p>
+      <div class="hero-ctas" data-reveal>
+        <a class="btn btn-primary" href="admissions.html">Apply Now</a>
+        <button class="btn btn-outline" onclick="openWhatsApp()">WhatsApp Us</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="notices-section" style="display:none;">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2>Notices</h2>
+      </div>
+      <div class="grid grid-3" id="notices">
+        <div class="loading-row"><span class="spinner"></span><span>Loading…</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="grid grid-4" id="stats">
+        <div class="loading-row"><span class="spinner"></span><span>Loading…</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2>Featured Courses</h2>
+        <p>Industry-aligned programs designed for real career outcomes.</p>
+      </div>
+      <div class="grid grid-3" id="courses">
+        <div class="loading-row"><span class="spinner"></span><span>Loading courses…</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2>Why Arihant College</h2>
+      </div>
+      <div class="grid grid-3">
+        <div class="card" data-reveal><h3>Experienced Faculty</h3><p>Learn from educators with strong academic and industry backgrounds.</p></div>
+        <div class="card" data-reveal><h3>Modern Infrastructure</h3><p>Well-equipped labs, library, and campus facilities built for learning.</p></div>
+        <div class="card" data-reveal><h3>Placement Support</h3><p>Dedicated placement cell working with recruiters across industries.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2>Campus Life</h2>
+        <p>Take a look inside Arihant College.</p>
+      </div>
+      <div class="card" data-reveal style="padding: var(--space-3); max-width: 860px; margin-inline: auto;">
+        <div id="campus-video-wrap" style="position:relative; aspect-ratio:16/9; border-radius: var(--radius-sm); overflow:hidden; background: linear-gradient(135deg, var(--navy-2), var(--blue)); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+          <button id="play-video-btn" aria-label="Play campus tour video" style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, var(--gold), var(--gold-bright)); border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 24px rgba(212,169,58,0.4);">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#0b2545"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <span style="position:absolute; bottom:16px; left:50%; transform:translateX(-50%); color:var(--text-muted); font-size:0.85rem;">Campus Tour Video</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <h2>Find Us</h2>
+        <p id="map-address">Opp I B Quarters, Main Road, Muddebihal, Bijapur, Karnataka, India</p>
+      </div>
+      <div class="card" data-reveal style="padding: var(--space-3);">
+        <div id="campus-map"></div>
+        <div style="display:flex; justify-content:center; gap: var(--space-4); margin-top: var(--space-4); flex-wrap:wrap;">
+          <a class="btn btn-primary" id="gmaps-link" href="#" target="_blank" rel="noopener">Open in Google Maps</a>
+          <button class="btn btn-outline" onclick="openWhatsApp()">WhatsApp Us</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div>
+      <h4>Arihant College</h4>
+      <p>Building futures since 1998.</p>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a href="admissions.html">Admissions</a></li>
+        <li><a href="fees.html">Fee Payment</a></li>
+        <li><a href="status.html">Check Status</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Contact</h4>
+      <ul>
+        <li id="footer-phone">Phone: —</li>
+        <li id="footer-email">Email: —</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Reach Us</h4>
+      <ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  // TODO: paste a real YouTube video ID here once campus footage is available
+  // (e.g. "dQw4w9WgXcQ" from youtube.com/watch?v=dQw4w9WgXcQ). Leave blank to
+  // keep the "coming soon" placeholder.
+  const CAMPUS_VIDEO_ID = "G4cRm1g_RhA";
+  document.getElementById("play-video-btn").addEventListener("click", () => {
+    const wrap = document.getElementById("campus-video-wrap");
+    if (CAMPUS_VIDEO_ID) {
+      wrap.innerHTML = `<iframe width="100%" height="100%" style="position:absolute; inset:0; border:0;" src="https://www.youtube.com/embed/${CAMPUS_VIDEO_ID}?autoplay=1" title="Arihant College Campus Tour" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    } else {
+      wrap.style.cursor = "default";
+      wrap.innerHTML = `<div style="text-align:center; padding: var(--space-6); max-width:420px;"><p style="margin-bottom:0; color:var(--text-muted);">Campus tour video coming soon. Once real footage is uploaded to YouTube, set <code>CAMPUS_VIDEO_ID</code> in index.html to enable this player.</p></div>`;
+    }
+  });
+
+  // Exact campus coordinates, resolved from the college's Google Maps link.
+  const CAMPUS_LOCATION = { lat: 16.3334457, lng: 76.1207408 };
+
+  const GOOGLE_MAPS_LINK = "https://maps.app.goo.gl/6V9J4bNPDM7EfjCu6";
+  document.getElementById("gmaps-link").href = GOOGLE_MAPS_LINK;
+
+  const map = L.map("campus-map").setView([CAMPUS_LOCATION.lat, CAMPUS_LOCATION.lng], 17);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
+  L.marker([CAMPUS_LOCATION.lat, CAMPUS_LOCATION.lng])
+    .addTo(map)
+    .bindPopup(`<strong>Arihant College</strong><br>${document.getElementById("map-address").textContent}<br><a href="${GOOGLE_MAPS_LINK}" target="_blank" rel="noopener">Get Directions</a>`)
+    .openPopup();
+
+  (async () => {
+    const noticesRes = await Api.getNotices();
+    if (noticesRes.ok && noticesRes.data.length) {
+      document.getElementById("notices-section").style.display = "block";
+      document.getElementById("notices").innerHTML = noticesRes.data
+        .map((n) => `
+          <div class="card" data-reveal>
+            <span class="badge">${new Date(n.Date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+            <h3>${n.Title}</h3>
+            <p>${n.Body}</p>
+          </div>`)
+        .join("");
+    }
+
+    const settingsRes = await Api.getSettings();
+    if (settingsRes.ok) {
+      const s = settingsRes.data;
+      if (s.hero_eyebrow) document.getElementById("hero-eyebrow").textContent = s.hero_eyebrow;
+      if (s.hero_title) document.getElementById("hero-title").textContent = s.hero_title;
+      if (s.hero_subtitle) document.getElementById("hero-subtitle").textContent = s.hero_subtitle;
+      if (s.address) document.getElementById("map-address").textContent = s.address;
+
+      document.getElementById("stats").innerHTML = `
+        <div class="card" data-reveal><h3>${s.founding_year}</h3><p>Established</p></div>
+        <div class="card" data-reveal><h3>${s.students_count}+</h3><p>Students</p></div>
+        <div class="card" data-reveal><h3>${s.placement_percent}%</h3><p>Placement Rate</p></div>
+        <div class="card" data-reveal><h3>4</h3><p>Departments</p></div>
+      `;
+      document.getElementById("footer-phone").textContent = "Phone: " + s.phone_primary;
+      document.getElementById("footer-email").textContent = "Email: " + s.email;
+    }
+
+    const coursesRes = await Api.getCourses();
+    const el = document.getElementById("courses");
+    if (coursesRes.ok) {
+      el.innerHTML = coursesRes.data
+        .filter((c) => c.Featured)
+        .map(
+          (c) => `
+        <div class="card" data-reveal>
+          <span class="badge">${c.Level}</span>
+          <h3>${c.Name}</h3>
+          <p>${c.DurationYears} years · ${c.Eligibility}</p>
+          <a class="btn btn-secondary" href="fees.html?course=${c.CourseId}">View Fees</a>
+        </div>`
+        )
+        .join("");
+    } else {
+      el.innerHTML = `<p>Could not load courses.</p>`;
+    }
+    window.initReveal();
+  })();
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

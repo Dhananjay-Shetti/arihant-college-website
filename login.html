@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login — Arihant College</title>
+<meta name="description" content="Student, Teacher, and Admin login for Arihant College." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<style>
+  .role-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-6); background: var(--glass); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
+  .role-tab {
+    flex: 1; text-align: center; padding: var(--space-2) var(--space-3); border-radius: 999px;
+    font-weight: 600; font-size: 0.9rem; color: var(--text-muted); cursor: pointer; transition: all 0.2s var(--ease); user-select: none;
+  }
+  .role-tab.active { background: linear-gradient(135deg, var(--blue), var(--sky)); color: var(--white); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="admissions.html">Admissions</a></li>
+      <li><a href="fees.html">Fees</a></li>
+      <li><a href="status.html">Check Status</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-8) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>Portal Login</span>
+      <h1 data-reveal>Sign In</h1>
+      <p class="lead" data-reveal>Students, teachers, and admins all sign in here — pick your role below.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container" style="max-width: 480px;">
+      <div class="card" data-reveal>
+        <div class="role-tabs" role="tablist">
+          <div class="role-tab active" data-role="student" role="tab">Student</div>
+          <div class="role-tab" data-role="teacher" role="tab">Teacher</div>
+          <div class="role-tab" data-role="admin" role="tab">Admin</div>
+        </div>
+
+        <div id="login-alert"></div>
+
+        <form id="login-form">
+          <div class="field">
+            <label for="identifier" id="identifier-label">Admission ID, Mobile, or Email</label>
+            <input id="identifier" name="identifier" type="text" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" required />
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Sign In</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="admissions.html">Admissions</a></li><li><a href="status.html">Check Status</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/session.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  let role = "student";
+  const identifierLabels = {
+    student: "Admission ID, Mobile, or Email",
+    teacher: "Email or Mobile",
+    admin: "Email",
+  };
+
+  document.querySelectorAll(".role-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".role-tab").forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      role = tab.dataset.role;
+      document.getElementById("identifier-label").textContent = identifierLabels[role];
+      document.getElementById("login-alert").innerHTML = "";
+    });
+  });
+
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const alertBox = document.getElementById("login-alert");
+    const btn = form.querySelector("button[type=submit]");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner spinner-dark"></span> Signing in…`;
+
+    const res = await Api.login(role, form.identifier.value.trim(), form.password.value);
+
+    btn.disabled = false;
+    btn.textContent = "Sign In";
+
+    if (!res.ok) {
+      alertBox.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+
+    Session.set({ ...res.data, role });
+    const dest = { student: "student-dashboard.html", teacher: "teacher-dashboard.html", admin: "admin-dashboard.html" }[role];
+    window.location.href = dest;
+  });
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

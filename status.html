@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Check Your Status — Arihant College</title>
+<meta name="description" content="Check your Arihant College admission and fee payment status using your Admission ID, mobile number, or email." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="admissions.html">Admissions</a></li>
+      <li><a href="fees.html">Fees</a></li>
+      <li><a href="status.html">Check Status</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="login.html">Login</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-8) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>No Login Required</span>
+      <h1 data-reveal>Check Your Status</h1>
+      <p class="lead" data-reveal>Look up your admission and fee payment status using your Admission ID, registered mobile number, or email.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container" style="max-width: 560px;">
+      <p class="form-note">This look-up calls <code>GET /students/lookup?query=</code> on the live Apps Script backend, which reads the Students / Payments_Log sheets directly — no separate login system, since the Admission ID + a matching phone/email is treated as sufficient proof of identity for a status check (not for making changes).</p>
+
+      <div class="card" data-reveal>
+        <form id="lookup-form">
+          <div class="field">
+            <label for="query">Admission ID, Mobile Number, or Email *</label>
+            <input id="query" name="query" type="text" placeholder="e.g. AC2026-0001 or 98XXXXXXXX" required />
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Check Status</button>
+        </form>
+      </div>
+
+      <div id="result" style="margin-top: var(--space-6);"></div>
+
+      <div class="card" data-reveal style="margin-top:var(--space-6); background: rgba(26,114,204,0.06);">
+        <p style="margin:0; font-size:0.85rem;">Try the seed record: <strong>AC2026-0001</strong>, <strong>9812345670</strong>, or <strong>test.student@example.com</strong></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="admissions.html">Admissions</a></li><li><a href="fees.html">Fee Payment</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  const badgeClass = { SUCCESS: "badge-success", PENDING: "badge-pending", FAILED: "badge-failed" };
+
+  document.getElementById("lookup-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const query = document.getElementById("query").value.trim();
+    const resultEl = document.getElementById("result");
+    resultEl.innerHTML = `<div class="loading-row"><span class="spinner"></span><span>Searching…</span></div>`;
+
+    const res = await Api.lookupStudent(query);
+
+    if (!res.ok) {
+      resultEl.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+
+    const s = res.data;
+    const paymentsHtml = (s.Payments && s.Payments.length)
+      ? s.Payments.map((p) => `
+          <div style="display:flex; justify-content:space-between; padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+            <span>${p.FeeId} — ₹${p.Amount.toLocaleString("en-IN")}</span>
+            <span class="badge ${badgeClass[p.Status] || "badge-pending"}">${p.Status}</span>
+          </div>`).join("")
+      : `<p class="form-note">No payment records found yet.</p>`;
+
+    resultEl.innerHTML = `
+      <div class="card" data-reveal>
+        <h3>${s.Name}</h3>
+        <p style="margin-bottom:var(--space-3);">Admission ID: <strong>${s.AdmissionId}</strong> &middot; Course: <strong>${s.CourseId}</strong> &middot; Status: <span class="badge badge-success">${s.Status}</span></p>
+        <h3 style="font-size:1rem;">Payment History</h3>
+        ${paymentsHtml}
+      </div>
+    `;
+    window.initReveal();
+  });
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

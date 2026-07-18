@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student Dashboard — Arihant College</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<style>
+  .stat-value { font-size: 2.25rem; font-weight: 700; color: var(--white); margin: 0; }
+  .stat-label { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+  .attendance-row { display:flex; justify-content:space-between; align-items:center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+  .attendance-row:last-child { border-bottom: none; }
+  .fee-row { display:flex; justify-content:space-between; align-items:center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .fee-row:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="page-loader-overlay" id="page-loader"><span class="spinner spinner-lg"></span></div>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li id="nav-name" style="color:var(--white);"></li>
+      <li><button class="btn btn-outline" id="logout-btn" style="padding: var(--space-2) var(--space-4); min-height:auto;">Logout</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-7) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>Student Dashboard</span>
+      <h1 data-reveal id="welcome-heading">Welcome</h1>
+      <p class="lead" data-reveal id="course-line"></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="grid grid-3" style="margin-bottom: var(--space-7);">
+        <div class="card" data-reveal>
+          <p class="stat-label">Monthly Attendance</p>
+          <p class="stat-value" id="monthly-percent">—</p>
+        </div>
+        <div class="card" data-reveal>
+          <p class="stat-label">Overall Attendance</p>
+          <p class="stat-value" id="overall-percent">—</p>
+        </div>
+        <div class="card" data-reveal>
+          <p class="stat-label">Fees Pending</p>
+          <p class="stat-value" id="fees-pending-count">—</p>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card" data-reveal>
+          <h3>Attendance — Day by Day</h3>
+          <div id="attendance-list"><p class="form-note">Loading…</p></div>
+        </div>
+
+        <div class="card" data-reveal>
+          <h3>Fee Payments</h3>
+          <div id="fees-list"><p class="form-note">Loading…</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="fees.html">Pay Fees</a></li><li><a href="index.html">Home</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/session.js"></script>
+<script src="assets/js/loader.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  const session = Session.require(["student"]);
+
+  const statusBadge = { Present: "badge-success", Absent: "badge-failed" };
+  const feeBadge = { SUCCESS: "badge-success", PENDING: "badge-pending", INITIATED: "badge-pending", FAILED: "badge-failed" };
+
+  function formatDate(d) {
+    return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  (async () => {
+    if (!session) return;
+    document.getElementById("nav-name").textContent = session.name;
+    document.getElementById("logout-btn").addEventListener("click", () => Session.logout());
+
+    const res = await Api.getStudentDashboard(session.token);
+    Loader.hide();
+    if (!res.ok) {
+      document.querySelector("main .container").innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+
+    const d = res.data;
+    document.getElementById("welcome-heading").textContent = `Welcome, ${d.name.split(" ")[0]}`;
+    document.getElementById("course-line").textContent = `${d.courseName} · Admission ID ${d.admissionId}`;
+    document.getElementById("monthly-percent").textContent = d.attendance.monthlyPercent === null ? "—" : d.attendance.monthlyPercent + "%";
+    document.getElementById("overall-percent").textContent = d.attendance.overallPercent === null ? "—" : d.attendance.overallPercent + "%";
+    document.getElementById("fees-pending-count").textContent = d.fees.pending.length + d.fees.failed.length;
+
+    const attendanceEl = document.getElementById("attendance-list");
+    attendanceEl.innerHTML = d.attendance.records.length
+      ? [...d.attendance.records].reverse().map((r) => `
+          <div class="attendance-row">
+            <span>${formatDate(r.date)}</span>
+            <span class="badge ${statusBadge[r.status] || "badge-pending"}">${r.status}</span>
+          </div>`).join("")
+      : `<p class="form-note">No attendance recorded yet.</p>`;
+
+    const feesEl = document.getElementById("fees-list");
+    const allFees = [
+      ...d.fees.paid.map((f) => ({ ...f, _group: "SUCCESS" })),
+      ...d.fees.pending.map((f) => ({ ...f, _group: f.Status })),
+      ...d.fees.failed.map((f) => ({ ...f, _group: "FAILED" })),
+    ];
+    feesEl.innerHTML = allFees.length
+      ? allFees.map((f) => `
+          <div class="fee-row">
+            <span>${f.FeeId} — ₹${Number(f.Amount).toLocaleString("en-IN")}</span>
+            <span style="display:flex; align-items:center; gap: var(--space-3);">
+              <span class="badge ${feeBadge[f.Status] || "badge-pending"}">${f.Status}</span>
+              ${f.Status === "SUCCESS" ? `<a class="btn btn-secondary" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="fee-receipt.html?orderId=${encodeURIComponent(f.OrderId)}">Receipt</a>` : ""}
+            </span>
+          </div>`).join("")
+      : `<p class="form-note">No fee records yet.</p>`;
+
+    window.initReveal();
+  })();
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{
+  "settings": {
+    "college_name": "Arihant College",
+    "phone_primary": "+91 98XXXXXX00",
+    "whatsapp_number": "91XXXXXXXXXX",
+    "email": "admissions@arihantcollege.example",
+    "address": "Arihant Campus Road, Your City, State - 000000",
+    "office_hours": "Mon-Sat, 9:00 AM - 5:00 PM",
+    "founding_year": "1998",
+    "students_count": "4200",
+    "placement_percent": "92"
+  },
+  "courses": [
+    { "CourseId": "BSC-CS", "Name": "B.Sc. Computer Science", "DepartmentId": "DEPT-SCI", "Level": "UG", "DurationYears": 3, "Eligibility": "10+2 with Science", "SeatsAvailable": 60, "Featured": true, "Active": true },
+    { "CourseId": "BCOM", "Name": "B.Com", "DepartmentId": "DEPT-COM", "Level": "UG", "DurationYears": 3, "Eligibility": "10+2 any stream", "SeatsAvailable": 120, "Featured": true, "Active": true },
+    { "CourseId": "BBA", "Name": "BBA", "DepartmentId": "DEPT-MGT", "Level": "UG", "DurationYears": 3, "Eligibility": "10+2 any stream", "SeatsAvailable": 80, "Featured": true, "Active": true },
+    { "CourseId": "MSC-CS", "Name": "M.Sc. Computer Science", "DepartmentId": "DEPT-SCI", "Level": "PG", "DurationYears": 2, "Eligibility": "B.Sc. CS/IT", "SeatsAvailable": 30, "Featured": false, "Active": true }
+  ],
+  "feeStructures": [
+    { "FeeId": "FEE-BSC-CS-S1", "CourseId": "BSC-CS", "Term": "Semester 1", "Amount": 45000, "DueDate": "2026-08-15", "Active": true },
+    { "FeeId": "FEE-BSC-CS-S2", "CourseId": "BSC-CS", "Term": "Semester 2", "Amount": 42000, "DueDate": "2027-01-15", "Active": true },
+    { "FeeId": "FEE-BCOM-Y1", "CourseId": "BCOM", "Term": "Year 1", "Amount": 35000, "DueDate": "2026-08-15", "Active": true },
+    { "FeeId": "FEE-BBA-Y1", "CourseId": "BBA", "Term": "Year 1", "Amount": 55000, "DueDate": "2026-08-15", "Active": true },
+    { "FeeId": "FEE-MSC-CS-S1", "CourseId": "MSC-CS", "Term": "Semester 1", "Amount": 38000, "DueDate": "2026-08-15", "Active": true }
+  ],
+  "students": [
+    {
+      "AdmissionId": "AC2026-0001",
+      "Name": "Riya Sharma",
+      "Phone": "9812345670",
+      "Email": "riya.sharma@example.com",
+      "CourseId": "BSC-CS",
+      "Status": "Enrolled",
+      "Payments": [
+        { "OrderId": "AC-1737000001-1111", "FeeId": "FEE-BSC-CS-S1", "Amount": 45000, "Status": "SUCCESS", "CreatedAt": "2026-06-01T10:15:00Z" },
+        { "OrderId": "AC-1737000002-2222", "FeeId": "FEE-BSC-CS-S2", "Amount": 42000, "Status": "PENDING", "CreatedAt": "2026-07-10T09:00:00Z" }
+      ]
+    },
+    {
+      "AdmissionId": "AC2026-0002",
+      "Name": "Arjun Mehta",
+      "Phone": "9822233344",
+      "Email": "arjun.mehta@example.com",
+      "CourseId": "BCOM",
+      "Status": "Applied",
+      "Payments": [
+        { "OrderId": "AC-1737000003-3333", "FeeId": "FEE-BCOM-Y1", "Amount": 35000, "Status": "FAILED", "CreatedAt": "2026-07-05T14:20:00Z" }
+      ]
+    },
+    {
+      "AdmissionId": "AC2026-0003",
+      "Name": "Sneha Patil",
+      "Phone": "9900112233",
+      "Email": "sneha.patil@example.com",
+      "CourseId": "BBA",
+      "Status": "Enrolled",
+      "Payments": []
+    }
+  ]
+}

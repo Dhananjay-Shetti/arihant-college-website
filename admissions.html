@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admissions — Arihant College</title>
+<meta name="description" content="Apply to Arihant College. Submit an enquiry or chat with admissions on WhatsApp." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="admissions.html">Admissions</a></li>
+      <li><a href="fees.html">Fees</a></li>
+      <li><a href="status.html">Check Status</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="login.html">Login</a></li>
+      <li><a class="nav-cta" href="admissions.html">Apply Now</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-8) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>Admissions</span>
+      <h1 data-reveal>Start Your Application</h1>
+      <p class="lead" data-reveal>Submit an enquiry below and our admissions team will reach out — or start a conversation on WhatsApp right away.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container grid grid-2">
+      <div class="card" data-reveal>
+        <h2 style="font-size:1.5rem;">Enquiry Form</h2>
+        <p class="form-note">Submissions are written directly to the Admissions_Enquiries sheet via the live Apps Script backend.</p>
+
+        <div id="form-alert"></div>
+
+        <form id="enquiry-form">
+          <div class="field">
+            <label for="name">Full Name *</label>
+            <input id="name" name="name" type="text" required />
+          </div>
+          <div class="field">
+            <label for="phone">Mobile Number *</label>
+            <input id="phone" name="phone" type="tel" pattern="[6-9][0-9]{9}" placeholder="10-digit mobile number" required />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" />
+          </div>
+          <div class="field">
+            <label for="course">Course of Interest</label>
+            <select id="course" name="courseInterest" disabled><option>Loading courses…</option></select>
+          </div>
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4"></textarea>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Submit Enquiry</button>
+        </form>
+      </div>
+
+      <div>
+        <div class="card" data-reveal>
+          <h2 style="font-size:1.5rem;">Chat With Us</h2>
+          <p>Prefer WhatsApp? Tap below to start a chat pre-filled with your course of interest.</p>
+          <p>Number on file: <code id="wa-number-display"></code></p>
+          <button class="btn btn-whatsapp btn-block" id="wa-chat-btn">Chat on WhatsApp</button>
+        </div>
+
+        <div class="card" data-reveal style="margin-top: var(--space-5);">
+          <h3>Admission Process</h3>
+          <ol style="color:var(--text-muted); padding-left: var(--space-5); margin:0;">
+            <li>Submit enquiry or WhatsApp us</li>
+            <li>Counsellor call within 24 hours</li>
+            <li>Document verification</li>
+            <li>Fee payment (see <a href="fees.html">Fees</a>)</li>
+            <li>Admission confirmation — save your Admission ID</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="fees.html">Fee Payment</a></li><li><a href="status.html">Check Status</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  document.getElementById("wa-number-display").textContent = "+" + CONFIG.WHATSAPP_NUMBER;
+
+  (async () => {
+    const res = await Api.getCourses();
+    const select = document.getElementById("course");
+    select.disabled = false;
+    select.innerHTML = `<option value="">Select a course</option>` +
+      (res.ok ? res.data.map((c) => `<option value="${c.CourseId}">${c.Name}</option>`).join("") : "");
+  })();
+
+  document.getElementById("wa-chat-btn").addEventListener("click", () => {
+    const course = document.getElementById("course");
+    const courseName = course.options[course.selectedIndex]?.text || "your courses";
+    openWhatsApp(`Hi ${CONFIG.COLLEGE_NAME}, I'm interested in ${courseName}. Please share admission details.`);
+  });
+
+  document.getElementById("enquiry-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const payload = {
+      name: form.name.value.trim(),
+      phone: form.phone.value.trim(),
+      email: form.email.value.trim(),
+      courseInterest: form.course.value,
+      message: form.message.value.trim(),
+      type: "admission",
+    };
+    const alertBox = document.getElementById("form-alert");
+    alertBox.innerHTML = "";
+    const submitBtn = form.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="spinner spinner-dark"></span> Submitting…`;
+
+    const res = await Api.submitEnquiry(payload);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit Enquiry";
+
+    if (res.ok) {
+      alertBox.innerHTML = `<div class="alert alert-success">Thank you, ${payload.name}. Your enquiry (Ref: ${res.data.enquiryId}) has been received. We'll reach out on ${payload.phone} shortly.</div>`;
+      form.reset();
+    } else {
+      alertBox.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+    }
+  });
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

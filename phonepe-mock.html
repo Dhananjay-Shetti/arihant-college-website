@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mock PhonePe Checkout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<style>
+  body::before, body::after { display: none; }
+  body { background: radial-gradient(circle at 50% 0%, #7c3aed, #5f259f 55%, #37154f); display:flex; align-items:center; min-height:100vh; }
+  .pp-card {
+    max-width: 420px;
+    width: 100%;
+    margin: var(--space-6) auto;
+    background: #ffffff;
+    border-radius: var(--radius);
+    padding: var(--space-6);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .pp-logo { font-weight: 700; color: #5f259f; font-size: 1.5rem; margin-bottom: var(--space-4); }
+  .pp-amount { font-size: 2rem; font-weight: 700; color: #101418; margin: var(--space-4) 0; }
+  .pp-row { display:flex; justify-content:space-between; color: #5b6572; font-size: 0.9rem; margin-bottom: var(--space-2); }
+  .pp-card .form-note { color: #5b6572; }
+</style>
+</head>
+<body>
+  <div class="pp-card">
+    <div class="pp-logo">PhonePe <span class="mock-tag">Simulated</span></div>
+    <p class="form-note">This is a placeholder checkout screen standing in for PhonePe's hosted payment page. No real gateway is called. Replace this page's role once real merchant credentials are configured — the live flow redirects to PhonePe's actual domain instead.</p>
+
+    <div class="pp-row"><span>Order ID</span><span id="order-id">—</span></div>
+    <div class="pp-row"><span>Merchant</span><span>Arihant College</span></div>
+    <div class="pp-amount" id="amount">₹0</div>
+
+    <button class="btn btn-primary btn-block" id="btn-success" style="margin-bottom: var(--space-3);">Simulate Payment Success</button>
+    <button class="btn btn-block" id="btn-fail" style="background:#f5f6f8; color:var(--error);">Simulate Payment Failure</button>
+  </div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get("orderId");
+  const amount = params.get("amount");
+
+  document.getElementById("order-id").textContent = orderId || "—";
+  document.getElementById("amount").textContent = "₹" + Number(amount || 0).toLocaleString("en-IN");
+
+  function finish(status) {
+    // Simulates what the real PhonePe callback would do server-side to Payments_Log:
+    // here we just persist to localStorage since there is no live backend yet.
+    const stored = JSON.parse(localStorage.getItem("mockPayments") || "{}");
+    stored[orderId] = status;
+    localStorage.setItem("mockPayments", JSON.stringify(stored));
+    window.location.href = `fee-status.html?orderId=${encodeURIComponent(orderId)}`;
+  }
+
+  document.getElementById("btn-success").addEventListener("click", () => finish("SUCCESS"));
+  document.getElementById("btn-fail").addEventListener("click", () => finish("FAILED"));
+</script>
+</body>
+</html>

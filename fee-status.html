@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Payment Status — Arihant College</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+</head>
+<body>
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="fees.html">Fees</a></li>
+      <li><a href="status.html">Check Status</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+  <section>
+    <div class="container" style="max-width: 480px; text-align:center;">
+      <h1>Payment Status</h1>
+      <p class="form-note">In production this page polls <code>GET /payments/status?orderId=</code> against the real Apps Script backend, which is itself updated by PhonePe's server-to-server callback. In mock mode it reads the simulated result you just chose.</p>
+      <div id="status-card" class="card">
+        <div class="loading-row" style="justify-content:center;"><span class="spinner"></span><span>Checking status…</span></div>
+      </div>
+      <a class="btn btn-secondary" href="fees.html" style="margin-top: var(--space-5);">Back to Fees</a>
+    </div>
+  </section>
+</main>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+  const orderId = new URLSearchParams(window.location.search).get("orderId");
+  const card = document.getElementById("status-card");
+
+  const badgeClass = { SUCCESS: "badge-success", PENDING: "badge-pending", FAILED: "badge-failed" };
+  const label = { SUCCESS: "Payment Successful", PENDING: "Payment Pending", FAILED: "Payment Failed" };
+
+  async function poll(attemptsLeft = 5) {
+    if (!orderId) {
+      card.innerHTML = `<p>No order ID provided.</p>`;
+      return;
+    }
+    const res = await Api.getPaymentStatus(orderId);
+    if (!res.ok) {
+      card.innerHTML = `<p>Could not fetch status.</p>`;
+      return;
+    }
+    const status = res.data.status;
+    if (status === "PENDING" && attemptsLeft > 0) {
+      card.innerHTML = `<p>Order <strong>${orderId}</strong> — <span class="badge badge-pending">Pending</span></p><div class="loading-row" style="justify-content:center;"><span class="spinner"></span><span>Confirming with PhonePe…</span></div>`;
+      setTimeout(() => poll(attemptsLeft - 1), 2000);
+      return;
+    }
+    card.innerHTML = `
+      <p>Order <strong>${orderId}</strong></p>
+      <p><span class="badge ${badgeClass[status] || "badge-pending"}">${label[status] || status}</span></p>
+      ${status === "SUCCESS" ? "<p>Thank you — your fee payment has been recorded.</p>" : ""}
+      ${status === "FAILED" ? '<p>The payment did not go through. Please try again from the <a href="fees.html">Fees page</a>.</p>' : ""}
+    `;
+  }
+
+  poll();
+</script>
+</body>
+</html>
