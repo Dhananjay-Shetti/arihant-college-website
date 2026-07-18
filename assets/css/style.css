@@ -173,6 +173,76 @@ code {
 }
 .nav-cta:hover { filter: brightness(1.06); }
 
+/* ---------- Mobile nav (hamburger) ---------- */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  cursor: pointer;
+  z-index: 60;
+}
+.hamburger {
+  width: 24px;
+  height: 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.hamburger span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: var(--white);
+  border-radius: 2px;
+  transition: transform 0.25s var(--ease), opacity 0.25s var(--ease);
+}
+.nav-toggle.open .hamburger span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.nav-toggle.open .hamburger span:nth-child(2) { opacity: 0; }
+.nav-toggle.open .hamburger span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+.nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 55;
+}
+body.nav-open { overflow: hidden; }
+
+@media (max-width: 900px) {
+  .nav-toggle { display: flex; align-items: center; justify-content: center; }
+
+  .nav-links {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(300px, 82vw);
+    background: var(--navy-2);
+    border-left: 1px solid var(--border);
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.4);
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: var(--space-1);
+    padding: calc(var(--space-9) + var(--space-4)) var(--space-5) var(--space-5);
+    transform: translateX(100%);
+    transition: transform 0.3s var(--ease);
+    overflow-y: auto;
+    z-index: 56;
+  }
+  .nav-links.open { transform: translateX(0); }
+
+  .nav-links li { width: 100%; }
+  .nav-links a, .nav-links button { display: block; width: 100%; padding: var(--space-3) 0; text-align: left; }
+  .nav-links .nav-cta { padding: var(--space-3) var(--space-5); text-align: center; margin-top: var(--space-3); }
+  .nav-links .btn-outline { width: auto; }
+
+  .nav-backdrop.open { display: block; }
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;

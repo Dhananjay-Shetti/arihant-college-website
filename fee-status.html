@@ -14,7 +14,10 @@
 <nav class="site-nav">
   <div class="container">
     <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
-    <ul class="nav-links">
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="hamburger"><span></span><span></span><span></span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a href="fees.html">Fees</a></li>
       <li><a href="status.html">Check Status</a></li>
@@ -22,6 +25,7 @@
     </ul>
   </div>
 </nav>
+<div class="nav-backdrop" id="nav-backdrop"></div>
 
 <main>
   <section>
@@ -36,6 +40,7 @@
   </section>
 </main>
 
+<script src="assets/js/nav.js"></script>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/api.js"></script>
 <script>
