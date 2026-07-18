@@ -207,7 +207,11 @@ code {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  z-index: 55;
+  /* Must stay below .site-nav's z-index (50): .site-nav is a positioned,
+     z-indexed ancestor, so it creates a stacking context that traps the
+     drawer (.nav-links) inside it regardless of the drawer's own z-index.
+     A backdrop above 50 paints over the drawer, blocking clicks. */
+  z-index: 40;
 }
 body.nav-open { overflow: hidden; }
 
