@@ -63,16 +63,18 @@
 
 <main id="main">
   <section class="hero hero-video">
-    <!-- <div class="hero-video-bg" id="hero-video-bg" aria-hidden="true">
-      <iframe
-        id="hero-video-iframe"
-        src="https://www.youtube.com/embed/G4cRm1g_RhA?autoplay=1&mute=1&loop=1&playlist=G4cRm1g_RhA&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&iv_load_policy=3"
-        title=""
-        frameborder="0"
-        allow="autoplay; encrypted-media"
-        tabindex="-1"
-      ></iframe>
-    </div> -->
+    <div class="hero-video-bg" id="hero-video-bg" aria-hidden="true">
+      <video
+        id="hero-video"
+        muted
+        loop
+        playsinline
+        preload="none"
+        aria-hidden="true"
+      >
+        <source src="assets/video/campus-hero-bg.mp4" type="video/mp4" />
+      </video>
+    </div>
     <div class="hero-video-overlay"></div>
     <div class="container">
       <span class="eyebrow" data-reveal id="hero-eyebrow">Admissions Open — 2026 Batch</span>
@@ -198,34 +200,42 @@
 <script src="assets/js/api.js"></script>
 <script src="assets/js/whatsapp.js"></script>
 <script>
-  // Cover-fits the hero background video regardless of container or source
-  // aspect ratio (same math as CSS background-size:cover, done in JS because
-  // iframes don't support object-fit reliably). Source is a YouTube Short
-  // (9:16 portrait) — a landscape source would need less cropping here, but
-  // this works correctly for either orientation.
+  // Self-hosted hero background video (licensed stock footage, landscape —
+  // object-fit:cover in CSS handles framing, no JS math needed unlike the
+  // old YouTube-iframe approach). Skipped entirely on narrow viewports,
+  // reduced-motion, and Save-Data connections so nobody pays for a 6MB
+  // download they can't see well or didn't ask to animate: the gradient
+  // overlay + .hero-video-bg's own background color is the fallback,
+  // already in place before this runs, so skipping just means "stay on
+  // the fallback." Paused via IntersectionObserver when scrolled out of
+  // view to avoid burning battery/CPU on an invisible video.
   (function () {
+    const video = document.getElementById("hero-video");
     const wrap = document.getElementById("hero-video-bg");
-    const iframe = document.getElementById("hero-video-iframe");
-    if (!wrap || !iframe) return;
-    const sourceAspect = 9 / 16;
+    if (!video || !wrap) return;
 
-    function resize() {
-      const cw = wrap.clientWidth;
-      const ch = wrap.clientHeight;
-      const containerAspect = cw / ch;
-      let w, h;
-      if (containerAspect > sourceAspect) {
-        w = cw;
-        h = cw / sourceAspect;
-      } else {
-        h = ch;
-        w = ch * sourceAspect;
-      }
-      iframe.style.width = w + "px";
-      iframe.style.height = h + "px";
-    }
-    resize();
-    window.addEventListener("resize", resize);
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isNarrowViewport = window.matchMedia("(max-width: 767px)").matches;
+    const saveData = navigator.connection && navigator.connection.saveData;
+
+    if (prefersReducedMotion || isNarrowViewport || saveData) return;
+
+    video.load();
+    video.play().catch(() => {
+      // Autoplay blocked (rare for muted video, but possible) — leave the
+      // gradient fallback in place rather than showing a stalled black frame.
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) video.play().catch(() => {});
+          else video.pause();
+        });
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(wrap);
   })();
 
   // TODO: paste a real YouTube video ID here once campus footage is available

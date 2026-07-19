@@ -405,19 +405,23 @@ body.nav-open { overflow: hidden; }
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
+  /* Fallback look for narrow/reduced-motion/save-data visitors who never
+     load the video (see the loader script) — same navy-to-blue gradient
+     used elsewhere in the design system, not a blank flat color. */
+  background: linear-gradient(135deg, var(--navy-2), var(--navy));
 }
-.hero-video-bg iframe {
+.hero-video-bg video {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .hero-video-overlay {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(7, 13, 26, 0.55) 0%, rgba(7, 13, 26, 0.82) 65%, var(--navy) 100%);
+  background: linear-gradient(180deg, rgba(7, 13, 26, 0.55) 0%, rgba(7, 13, 26, 0.3) 65%, var(--navy) 100%);
 }
 .hero-video .container { position: relative; z-index: 2; }
 

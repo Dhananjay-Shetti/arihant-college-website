@@ -209,6 +209,26 @@ const Api = (() => {
     return realRequest("teacher/ia-marks", "POST", { token, courseId, subject, component, maxMarks, records });
   }
 
+  async function submitAdmissionApplication(token, payload) {
+    return realRequest("admin/admission/submit", "POST", { token, ...payload });
+  }
+
+  async function getAdmissionApplications(token) {
+    return realRequest("admin/admission/list", "GET", null, { token });
+  }
+
+  async function getApplicationDocuments(token, applicationId) {
+    return realRequest("admin/admission/documents", "GET", null, { token, applicationId });
+  }
+
+  async function getAdmissionApplication(token, applicationId) {
+    return realRequest("admin/admission/get", "GET", null, { token, applicationId });
+  }
+
+  async function recompileConsolidatedPdf(token, applicationId, screenshotBase64) {
+    return realRequest("admin/admission/recompile", "POST", { token, applicationId, screenshotBase64 });
+  }
+
   async function getAdminDashboard(token) {
     return realRequest("admin/dashboard", "GET", null, { token });
   }
@@ -261,6 +281,11 @@ const Api = (() => {
     getStudentIaMarks,
     getTeacherIaMarks,
     saveTeacherIaMarks,
+    submitAdmissionApplication,
+    getAdmissionApplications,
+    getApplicationDocuments,
+    getAdmissionApplication,
+    recompileConsolidatedPdf,
     getAdminDashboard,
     getNotices,
     getAdminNotices,

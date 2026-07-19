@@ -47,6 +47,11 @@ function route(e, method) {
       "GET:student/ia-marks": () => getStudentIaMarks(e),
       "GET:teacher/ia-marks": () => getTeacherIaMarks(e),
       "POST:teacher/ia-marks": () => postTeacherIaMarks(e),
+      "POST:admin/admission/submit": () => submitAdmissionApplication(e),
+      "GET:admin/admission/list": () => listAdmissionApplications(e),
+      "GET:admin/admission/documents": () => listApplicationDocuments(e),
+      "GET:admin/admission/get": () => getAdmissionApplication(e),
+      "POST:admin/admission/recompile": () => recompileConsolidatedPdf(e),
 
       "GET:admin/dashboard": () => getAdminDashboard(e),
       "GET:notices": () => getNotices(),

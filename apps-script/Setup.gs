@@ -30,6 +30,15 @@ function setupSheets() {
     Notices: ["NoticeId", "Title", "Body", "Date", "Active", "Order"],
     IA_Marks: ["IaId", "StudentId", "CourseId", "Subject", "Component", "MaxMarks", "MarksObtained", "EnteredBy", "UpdatedAt"],
     IA_Marks_Audit: ["AuditId", "IaId", "StudentId", "Subject", "Component", "OldMarks", "NewMarks", "ChangedBy", "ChangedAt"],
+    Admission_Applications: [
+      "ApplicationId", "FirstName", "MiddleName", "LastName", "DOB", "FatherName", "MotherName",
+      "PresentAddress", "PresentCity", "PresentState", "PresentPincode",
+      "PermanentAddress", "PermanentCity", "PermanentState", "PermanentPincode",
+      "MobileNumber", "Email", "ProgramType", "DriveFolderId", "DriveFolderUrl",
+      "ConsolidatedPdfUrl", "ConsolidatedPdfStatus",
+      "Status", "CreatedBy", "CreatedAt",
+    ],
+    Admission_Documents: ["DocId", "ApplicationId", "DocType", "FileName", "MimeType", "DriveFileId", "DriveFileUrl", "UploadedAt"],
   };
 
   Object.keys(schemas).forEach((name) => {

@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (!t) t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>New Admission Application — Arihant College Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  .form-section { margin-bottom: var(--space-7); }
+  .form-section h3 { display:flex; align-items:center; gap: var(--space-3); }
+  .form-section .step-num {
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 26px; height: 26px; border-radius:50%; background: var(--glass);
+    border: 1px solid var(--border-bright); color: var(--gold-bright);
+    font-size: 0.8rem; font-weight: 700; flex-shrink:0;
+  }
+  .same-address-toggle {
+    display:flex; align-items:center; gap: var(--space-3);
+    padding: var(--space-3) var(--space-4); background: var(--glass);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: var(--space-5); cursor: pointer;
+  }
+  .same-address-toggle input { width:18px; height:18px; accent-color: var(--gold); cursor:pointer; }
+  .doc-upload {
+    border: 1px dashed var(--border-bright);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+  .doc-upload.valid { border-style: solid; border-color: rgba(52,201,142,0.4); background: rgba(52,201,142,0.05); }
+  .doc-upload.invalid { border-style: solid; border-color: rgba(239,106,106,0.4); background: rgba(239,106,106,0.05); }
+  .doc-upload label { display:block; font-weight:600; margin-bottom: var(--space-2); }
+  .doc-upload .doc-status { font-size: 0.82rem; margin-top: var(--space-2); color: var(--text-muted); }
+  .doc-upload.valid .doc-status { color: var(--success); }
+  .doc-upload.invalid .doc-status { color: var(--error); }
+  .app-row { display:flex; justify-content:space-between; align-items:center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); gap: var(--space-3); flex-wrap:wrap; }
+  .app-row:last-child { border-bottom:none; }
+
+  /* Off-screen (not display:none — html2canvas needs it actually laid out)
+     printable summary, captured as page 1 of the compiled PDF. Styled as a
+     plain white document regardless of site theme, not the live form UI.
+
+     IMPORTANT: this must be genuinely on-screen (not position:fixed with a
+     -9999px offset, not opacity:0, not visibility:hidden) while html2canvas
+     runs. All three of those "hide it off-screen" tricks are known
+     html2canvas failure modes that can silently produce a blank canvas —
+     that's exactly what happened to APP-2026-0007's compiled PDF (valid
+     file, blank page 1). #print-summary is the full-viewport backdrop,
+     toggled visible only for the ~1 frame it takes to capture
+     #print-summary-inner, which is the actual 794px content node passed to
+     html2canvas — kept off in normal operation via display:none. */
+  #print-summary {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(11, 21, 40, 0.92);
+    align-items: flex-start;
+    justify-content: center;
+    overflow: auto;
+    padding: 40px 20px;
+  }
+  #print-summary.visible { display: flex; }
+  #print-summary-inner {
+    width: 794px;
+    max-width: 100%;
+    background: #ffffff;
+    color: #101418;
+    font-family: "Barlow", system-ui, sans-serif;
+    padding: 48px;
+  }
+  #print-summary-inner .ps-header { display:flex; align-items:center; gap:16px; border-bottom: 3px solid #0b2545; padding-bottom: 16px; margin-bottom: 24px; }
+  #print-summary-inner .ps-header img { width: 56px; height: 56px; }
+  #print-summary-inner .ps-header h2 { margin:0; color:#0b2545; font-size: 1.4rem; }
+  #print-summary-inner .ps-header p { margin:0; color:#5b6572; font-size:0.85rem; }
+  #print-summary-inner .ps-title { text-align:center; font-size:1.1rem; font-weight:700; color:#0b2545; margin-bottom: 24px; text-transform:uppercase; letter-spacing:0.05em; }
+  #print-summary-inner .ps-section-title { font-size:0.85rem; font-weight:700; color:#d4a93a; text-transform:uppercase; letter-spacing:0.05em; margin: 20px 0 8px; border-bottom:1px solid #e5e8ec; padding-bottom:4px; }
+  #print-summary-inner .ps-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
+  #print-summary-inner .ps-row { font-size:0.9rem; }
+  #print-summary-inner .ps-label { color:#5b6572; display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.03em; }
+  #print-summary-inner .ps-value { color:#101418; font-weight:600; }
+  #print-summary-inner .ps-footer { margin-top:32px; padding-top:16px; border-top:1px solid #e5e8ec; font-size:0.75rem; color:#5b6572; }
+</style>
+</head>
+<body>
+<div class="page-loader-overlay" id="page-loader"><span class="spinner spinner-lg"></span></div>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="hamburger"><span></span><span></span><span></span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+      <li><button class="theme-toggle" type="button" aria-label="Toggle theme"></button></li>
+      <li><a href="admin-dashboard.html">Dashboard</a></li>
+      <li id="nav-name" style="color:var(--white);"></li>
+      <li><button class="btn btn-outline" id="logout-btn" style="padding: var(--space-2) var(--space-4); min-height:auto;">Logout</button></li>
+    </ul>
+  </div>
+</nav>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-7) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>Admin — Admissions Processing</span>
+      <h1 data-reveal>New Admission Application</h1>
+      <p class="lead" data-reveal>Capture applicant details and upload documents directly to Google Drive (<code>CollegeData/AdmissionForms/&lt;Application ID&gt;</code>).</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container" style="max-width: 780px;">
+      <div id="form-alert"></div>
+      <div id="success-card" style="display:none;" class="card">
+        <h3>Application Submitted</h3>
+        <p>Application ID: <strong id="success-app-id"></strong></p>
+        <p><a id="success-drive-link" href="#" target="_blank" rel="noopener">Open the Drive folder</a></p>
+        <p><a id="success-pdf-link" href="#" target="_blank" rel="noopener" style="display:none;">Download the compiled admission PDF</a></p>
+        <div id="success-pdf-warning" class="form-note" style="display:none; color: var(--warning); margin-bottom: var(--space-4);"></div>
+        <button class="btn btn-primary" id="new-application-btn">Start Another Application</button>
+      </div>
+
+      <form id="admission-form">
+        <div class="card form-section" data-reveal>
+          <h3><span class="step-num">1</span> Personal Information</h3>
+          <div class="grid grid-3" style="gap: var(--space-3);">
+            <div class="field">
+              <label for="firstName">First Name *</label>
+              <input id="firstName" required />
+            </div>
+            <div class="field">
+              <label for="middleName">Middle Name</label>
+              <input id="middleName" />
+            </div>
+            <div class="field">
+              <label for="lastName">Last Name *</label>
+              <input id="lastName" required />
+            </div>
+          </div>
+          <div class="grid grid-3" style="gap: var(--space-3);">
+            <div class="field">
+              <label for="dob">Date of Birth *</label>
+              <input id="dob" type="date" required />
+            </div>
+            <div class="field">
+              <label for="mobileNumber">Mobile Number *</label>
+              <input id="mobileNumber" type="tel" pattern="[6-9][0-9]{9}" placeholder="10-digit mobile number" required />
+            </div>
+            <div class="field">
+              <label for="email">Email ID *</label>
+              <input id="email" type="email" placeholder="applicant@example.com" required />
+            </div>
+            <div class="field">
+              <label for="fatherName">Father's Name *</label>
+              <input id="fatherName" required />
+            </div>
+            <div class="field">
+              <label for="motherName">Mother's Name</label>
+              <input id="motherName" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card form-section" data-reveal>
+          <h3><span class="step-num">2</span> Present Address</h3>
+          <div class="field">
+            <label for="presentAddress">Street Address *</label>
+            <input id="presentAddress" required />
+          </div>
+          <div class="grid grid-3" style="gap: var(--space-3);">
+            <div class="field">
+              <label for="presentCity">City *</label>
+              <input id="presentCity" required />
+            </div>
+            <div class="field">
+              <label for="presentState">State *</label>
+              <input id="presentState" required />
+            </div>
+            <div class="field">
+              <label for="presentPincode">Pincode *</label>
+              <input id="presentPincode" pattern="[0-9]{6}" maxlength="6" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="card form-section" data-reveal>
+          <h3><span class="step-num">3</span> Permanent Address</h3>
+          <label class="same-address-toggle">
+            <input type="checkbox" id="same-as-present" />
+            <span>Same as present address</span>
+          </label>
+          <div id="permanent-address-fields">
+            <div class="field">
+              <label for="permanentAddress">Street Address *</label>
+              <input id="permanentAddress" required />
+            </div>
+            <div class="grid grid-3" style="gap: var(--space-3);">
+              <div class="field">
+                <label for="permanentCity">City *</label>
+                <input id="permanentCity" required />
+              </div>
+              <div class="field">
+                <label for="permanentState">State *</label>
+                <input id="permanentState" required />
+              </div>
+              <div class="field">
+                <label for="permanentPincode">Pincode *</label>
+                <input id="permanentPincode" pattern="[0-9]{6}" maxlength="6" required />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card form-section" data-reveal>
+          <h3><span class="step-num">4</span> Program Applied For</h3>
+          <div class="field">
+            <label for="programType">Program *</label>
+            <select id="programType" required>
+              <option value="">Select a program</option>
+              <option value="PUC">PUC</option>
+              <option value="Degree">Degree</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card form-section" data-reveal id="documents-card" style="display:none;">
+          <h3><span class="step-num">5</span> Required Documents</h3>
+          <p class="form-note">PDF, JPG, or PNG — max 5MB each.</p>
+          <div id="documents-list"></div>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Submit Application</button>
+      </form>
+
+      <!-- Toggled visible (see captureFormScreenshot) only for the instant
+           html2canvas needs to capture #print-summary-inner. Not the raw
+           form UI — a purpose-built document view. -->
+      <div id="print-summary">
+        <div id="print-summary-inner">
+          <div class="ps-header">
+            <img src="assets/img/logo.svg" alt="" />
+            <div>
+              <h2>Arihant College</h2>
+              <p>Admission Application Record</p>
+            </div>
+          </div>
+          <div class="ps-title" id="ps-program-title">Program: —</div>
+
+          <div class="ps-section-title">Personal Information</div>
+          <div class="ps-grid">
+            <div class="ps-row"><span class="ps-label">Full Name</span><span class="ps-value" id="ps-name">—</span></div>
+            <div class="ps-row"><span class="ps-label">Date of Birth</span><span class="ps-value" id="ps-dob">—</span></div>
+            <div class="ps-row"><span class="ps-label">Father's Name</span><span class="ps-value" id="ps-father">—</span></div>
+            <div class="ps-row"><span class="ps-label">Mother's Name</span><span class="ps-value" id="ps-mother">—</span></div>
+            <div class="ps-row"><span class="ps-label">Mobile Number</span><span class="ps-value" id="ps-mobile">—</span></div>
+            <div class="ps-row"><span class="ps-label">Email ID</span><span class="ps-value" id="ps-email">—</span></div>
+          </div>
+
+          <div class="ps-section-title">Present Address</div>
+          <div class="ps-row"><span class="ps-value" id="ps-present-address">—</span></div>
+
+          <div class="ps-section-title">Permanent Address</div>
+          <div class="ps-row"><span class="ps-value" id="ps-permanent-address">—</span></div>
+
+          <div class="ps-footer" id="ps-generated">Generated on —</div>
+        </div>
+      </div>
+
+      <div class="card" data-reveal style="margin-top: var(--space-7);">
+        <h3>Recent Applications</h3>
+        <div id="recent-applications"><div class="loading-row"><span class="spinner"></span><span>Loading…</span></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="admin-dashboard.html">Dashboard</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/nav.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/session.js"></script>
+<script src="assets/js/loader.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  const session = Session.require(["admin"]);
+
+  const REQUIRED_DOCS_BY_PROGRAM = {
+    PUC: ["10th Marks Card", "Leaving Certificate", "Caste/Income Certificate"],
+    Degree: ["10th Marks Card", "12th Marks Card", "Leaving Certificate", "Caste/Income Certificate"],
+  };
+  const ALLOWED_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+  const MAX_DOC_BYTES = 5 * 1024 * 1024;
+
+  let selectedFiles = {}; // docType -> File
+
+  function toDdMmYyyy(isoDate) {
+    const [y, m, d] = isoDate.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function formatAddress(addr) {
+    return `${addr.address}, ${addr.city}, ${addr.state} - ${addr.pincode}`;
+  }
+
+  /**
+   * Fills the hidden #print-summary with the values about to be submitted,
+   * captures it via html2canvas, and returns a base64 PNG (no data: prefix)
+   * for page 1 of the compiled PDF — or null if capture fails, since a
+   * missing screenshot shouldn't block the rest of the submission (the
+   * documents and application data matter more than this cosmetic page).
+   */
+  // Two animation-frame ticks reliably land after the browser has actually
+  // painted the just-shown overlay — capturing on the same tick display:flex
+  // was set is a race that can also produce a blank canvas.
+  function nextPaint() {
+    return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  async function captureFormScreenshot(payload, name) {
+    const overlay = document.getElementById("print-summary");
+    try {
+      document.getElementById("ps-program-title").textContent = "Program Applied For: " + payload.programType;
+      document.getElementById("ps-name").textContent = name;
+      document.getElementById("ps-dob").textContent = payload.dob;
+      document.getElementById("ps-father").textContent = payload.fatherName;
+      document.getElementById("ps-mother").textContent = payload.motherName || "—";
+      document.getElementById("ps-mobile").textContent = payload.mobileNumber;
+      document.getElementById("ps-email").textContent = payload.email;
+      document.getElementById("ps-present-address").textContent = formatAddress(payload.present);
+      document.getElementById("ps-permanent-address").textContent = formatAddress(payload.permanent);
+      document.getElementById("ps-generated").textContent = "Generated on " + new Date().toLocaleString("en-IN");
+
+      overlay.classList.add("visible");
+      await nextPaint();
+
+      const canvas = await html2canvas(document.getElementById("print-summary-inner"), { scale: 2, backgroundColor: "#ffffff", logging: false });
+      const dataUrl = canvas.toDataURL("image/png");
+
+      // A canvas that failed to render real content still produces a valid
+      // (tiny) data URL — catch that case explicitly instead of trusting
+      // "no exception was thrown" the way the previous version did.
+      if (!dataUrl || dataUrl.length < 5000) {
+        console.error("Screenshot capture produced a suspiciously small image, treating as failed:", dataUrl.length, "chars");
+        return null;
+      }
+      return dataUrl.split(",")[1];
+    } catch (err) {
+      console.error("Screenshot capture failed, continuing without it:", err);
+      return null;
+    } finally {
+      overlay.classList.remove("visible");
+    }
+  }
+
+  // ---------- Same-as-present address ----------
+  const sameAsPresent = document.getElementById("same-as-present");
+  const permanentFieldsWrap = document.getElementById("permanent-address-fields");
+  const presentIds = ["presentAddress", "presentCity", "presentState", "presentPincode"];
+  const permanentIds = ["permanentAddress", "permanentCity", "permanentState", "permanentPincode"];
+
+  sameAsPresent.addEventListener("change", () => {
+    const checked = sameAsPresent.checked;
+    permanentIds.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (checked) {
+        el.value = document.getElementById(presentIds[i]).value;
+        el.disabled = true;
+      } else {
+        el.disabled = false;
+      }
+    });
+    permanentFieldsWrap.style.opacity = checked ? "0.6" : "1";
+  });
+
+  presentIds.forEach((id, i) => {
+    document.getElementById(id).addEventListener("input", (e) => {
+      if (sameAsPresent.checked) document.getElementById(permanentIds[i]).value = e.target.value;
+    });
+  });
+
+  // ---------- Program type -> document uploads ----------
+  document.getElementById("programType").addEventListener("change", (e) => {
+    const program = e.target.value;
+    const docsCard = document.getElementById("documents-card");
+    const docsList = document.getElementById("documents-list");
+    selectedFiles = {};
+
+    if (!program) {
+      docsCard.style.display = "none";
+      return;
+    }
+
+    docsCard.style.display = "block";
+    const docs = REQUIRED_DOCS_BY_PROGRAM[program];
+    docsList.innerHTML = docs
+      .map(
+        (docType, i) => `
+      <div class="doc-upload" id="doc-upload-${i}" data-doctype="${docType}">
+        <label for="doc-input-${i}">${docType} *</label>
+        <input type="file" id="doc-input-${i}" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" />
+        <div class="doc-status" id="doc-status-${i}">No file selected</div>
+      </div>`
+      )
+      .join("");
+
+    docs.forEach((docType, i) => {
+      document.getElementById(`doc-input-${i}`).addEventListener("change", (ev) => {
+        const file = ev.target.files[0];
+        const wrap = document.getElementById(`doc-upload-${i}`);
+        const status = document.getElementById(`doc-status-${i}`);
+        if (!file) {
+          delete selectedFiles[docType];
+          wrap.className = "doc-upload";
+          status.textContent = "No file selected";
+          return;
+        }
+        if (ALLOWED_MIME_TYPES.indexOf(file.type) === -1) {
+          delete selectedFiles[docType];
+          wrap.className = "doc-upload invalid";
+          status.textContent = "Invalid file type — must be PDF, JPG, or PNG";
+          ev.target.value = "";
+          return;
+        }
+        if (file.size > MAX_DOC_BYTES) {
+          delete selectedFiles[docType];
+          wrap.className = "doc-upload invalid";
+          status.textContent = "File too large — max 5MB";
+          ev.target.value = "";
+          return;
+        }
+        selectedFiles[docType] = file;
+        wrap.className = "doc-upload valid";
+        status.textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+      });
+    });
+  });
+
+  // ---------- Submit ----------
+  document.getElementById("admission-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const alertBox = document.getElementById("form-alert");
+    alertBox.innerHTML = "";
+
+    const program = document.getElementById("programType").value;
+    const requiredDocs = REQUIRED_DOCS_BY_PROGRAM[program] || [];
+    const missingDocs = requiredDocs.filter((docType) => !selectedFiles[docType]);
+    if (missingDocs.length) {
+      alertBox.innerHTML = `<div class="alert alert-error">Missing document(s): ${missingDocs.join(", ")}</div>`;
+      return;
+    }
+
+    const btn = document.getElementById("submit-btn");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner spinner-dark"></span> Uploading documents…`;
+
+    try {
+      const documents = await Promise.all(
+        requiredDocs.map(async (docType) => {
+          const file = selectedFiles[docType];
+          const base64Data = await fileToBase64(file);
+          return { docType, fileName: file.name, mimeType: file.type, base64Data };
+        })
+      );
+
+      const payload = {
+        firstName: document.getElementById("firstName").value.trim(),
+        middleName: document.getElementById("middleName").value.trim(),
+        lastName: document.getElementById("lastName").value.trim(),
+        dob: toDdMmYyyy(document.getElementById("dob").value),
+        fatherName: document.getElementById("fatherName").value.trim(),
+        motherName: document.getElementById("motherName").value.trim(),
+        mobileNumber: document.getElementById("mobileNumber").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        present: {
+          address: document.getElementById("presentAddress").value.trim(),
+          city: document.getElementById("presentCity").value.trim(),
+          state: document.getElementById("presentState").value.trim(),
+          pincode: document.getElementById("presentPincode").value.trim(),
+        },
+        permanent: {
+          address: document.getElementById("permanentAddress").value.trim(),
+          city: document.getElementById("permanentCity").value.trim(),
+          state: document.getElementById("permanentState").value.trim(),
+          pincode: document.getElementById("permanentPincode").value.trim(),
+        },
+        programType: program,
+        documents,
+      };
+
+      const fullName = [payload.firstName, payload.middleName, payload.lastName].filter(Boolean).join(" ");
+      btn.innerHTML = `<span class="spinner spinner-dark"></span> Capturing application record…`;
+      payload.screenshotBase64 = await captureFormScreenshot(payload, fullName);
+
+      btn.innerHTML = `<span class="spinner spinner-dark"></span> Submitting…`;
+      const res = await Api.submitAdmissionApplication(session.token, payload);
+
+      if (Session.handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alertBox.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+        btn.disabled = false;
+        btn.textContent = "Submit Application";
+        return;
+      }
+
+      document.getElementById("admission-form").style.display = "none";
+      document.getElementById("success-card").style.display = "block";
+      document.getElementById("success-app-id").textContent = res.data.applicationId;
+      document.getElementById("success-drive-link").href = res.data.driveFolderUrl;
+
+      const pdfLinkEl = document.getElementById("success-pdf-link");
+      if (res.data.consolidatedPdfUrl) {
+        pdfLinkEl.href = res.data.consolidatedPdfUrl;
+        pdfLinkEl.style.display = "inline";
+      } else {
+        pdfLinkEl.style.display = "none";
+      }
+      const pdfWarningEl = document.getElementById("success-pdf-warning");
+      pdfWarningEl.style.display = res.data.consolidatedPdfWarning ? "block" : "none";
+      pdfWarningEl.textContent = res.data.consolidatedPdfWarning || "";
+
+      loadRecentApplications();
+    } catch (err) {
+      alertBox.innerHTML = `<div class="alert alert-error">Upload failed: ${err.message}</div>`;
+      btn.disabled = false;
+      btn.textContent = "Submit Application";
+    }
+  });
+
+  document.getElementById("new-application-btn").addEventListener("click", () => {
+    document.getElementById("admission-form").reset();
+    document.getElementById("documents-card").style.display = "none";
+    document.getElementById("documents-list").innerHTML = "";
+    selectedFiles = {};
+    document.getElementById("submit-btn").disabled = false;
+    document.getElementById("submit-btn").textContent = "Submit Application";
+    document.getElementById("success-card").style.display = "none";
+    document.getElementById("success-pdf-link").style.display = "none";
+    document.getElementById("success-pdf-warning").style.display = "none";
+    document.getElementById("admission-form").style.display = "block";
+  });
+
+  async function loadRecentApplications() {
+    const el = document.getElementById("recent-applications");
+    const res = await Api.getAdmissionApplications(session.token);
+    if (Session.handleAuthError(res)) return;
+    if (!res.ok) {
+      el.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+    el.innerHTML = res.data.length
+      ? res.data
+          .map(
+            (a) => `
+        <div>
+          <div class="app-row">
+            <span><strong>${a.applicationId}</strong> — ${a.name} <span class="badge">${a.programType}</span></span>
+            <span style="display:flex; gap: var(--space-2); flex-wrap:wrap;">
+              <button type="button" class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" data-toggle-docs="${a.applicationId}">Documents</button>
+              <a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.driveFolderUrl}" target="_blank" rel="noopener">Drive Folder</a>
+              <button type="button" class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" data-regenerate="${a.applicationId}">Regenerate PDF</button>
+            </span>
+          </div>
+          <div id="docs-${a.applicationId}" style="display:none; padding: var(--space-3) 0 var(--space-4);"></div>
+        </div>`
+          )
+          .join("")
+      : `<p class="form-note">No applications submitted yet.</p>`;
+
+    el.querySelectorAll("[data-toggle-docs]").forEach((btn) => {
+      btn.addEventListener("click", () => toggleDocuments(btn.dataset.toggleDocs));
+    });
+
+    el.querySelectorAll("[data-regenerate]").forEach((btn) => {
+      btn.addEventListener("click", () => regenerateConsolidatedPdf(btn.dataset.regenerate, btn));
+    });
+  }
+
+  async function toggleDocuments(applicationId) {
+    const box = document.getElementById(`docs-${applicationId}`);
+    if (box.style.display === "block") {
+      box.style.display = "none";
+      return;
+    }
+    box.style.display = "block";
+    box.innerHTML = `<div class="loading-row"><span class="spinner"></span><span>Loading…</span></div>`;
+    const docsRes = await Api.getApplicationDocuments(session.token, applicationId);
+    if (Session.handleAuthError(docsRes)) return;
+    box.innerHTML = docsRes.ok && docsRes.data.length
+      ? docsRes.data
+          .map((d) => `<div class="app-row" style="border-bottom:none; padding: var(--space-1) 0;"><span>${d.docType}</span><a href="${d.driveFileUrl}" target="_blank" rel="noopener">Open</a></div>`)
+          .join("")
+      : `<p class="form-note">No documents found.</p>`;
+  }
+
+  /**
+   * Rebuilds the consolidated PDF for an already-submitted application —
+   * fetches the stored record, repopulates the same #print-summary
+   * template used at submit time, recaptures it (with the fixed on-screen
+   * technique), and asks the backend to recompile using the original
+   * uploaded documents. Fixes an application whose first PDF came out with
+   * a blank screenshot page without re-entering or re-uploading anything.
+   */
+  async function regenerateConsolidatedPdf(applicationId, btn) {
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner spinner-dark"></span> Regenerating…`;
+
+    try {
+      const appRes = await Api.getAdmissionApplication(session.token, applicationId);
+      if (Session.handleAuthError(appRes)) return;
+      if (!appRes.ok) {
+        alert(appRes.error);
+        return;
+      }
+
+      const record = appRes.data;
+      const fullName = [record.firstName, record.middleName, record.lastName].filter(Boolean).join(" ");
+      const screenshotBase64 = await captureFormScreenshot(record, fullName);
+      if (!screenshotBase64) {
+        alert("Screenshot capture failed again — the compiled PDF was not regenerated. Check the browser console for details.");
+        return;
+      }
+
+      const res = await Api.recompileConsolidatedPdf(session.token, applicationId, screenshotBase64);
+      if (Session.handleAuthError(res)) return;
+      if (!res.ok) {
+        alert("Regenerate failed: " + res.error);
+        return;
+      }
+
+      alert("Consolidated PDF regenerated successfully.");
+      await loadRecentApplications();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  (async () => {
+    if (!session) return;
+    document.getElementById("nav-name").textContent = session.name;
+    document.getElementById("logout-btn").addEventListener("click", () => Session.logout());
+    Loader.hide();
+    await loadRecentApplications();
+    window.initReveal();
+  })();
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>
