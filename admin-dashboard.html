@@ -133,7 +133,7 @@
     }
     const d = res.data;
     document.getElementById("stats").innerHTML = `
-      <div class="card" data-reveal><p class="stat-label">Fees Collected</p><p class="stat-value">₹${d.totalFeesCollected.toLocaleString("en-IN")}</p></div>
+      <div class="card card-glow" data-reveal><p class="stat-label">Fees Collected</p><p class="stat-value">₹${d.totalFeesCollected.toLocaleString("en-IN")}</p></div>
       <div class="card" data-reveal><p class="stat-label">Fees Pending</p><p class="stat-value">₹${d.pendingFees.toLocaleString("en-IN")}</p></div>
       <div class="card" data-reveal><p class="stat-label">Total Students</p><p class="stat-value">${d.totalStudents}</p></div>
       <div class="card" data-reveal><p class="stat-label">Avg. Attendance</p><p class="stat-value">${d.avgAttendancePercent === null ? "—" : d.avgAttendancePercent + "%"}</p></div>

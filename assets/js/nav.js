@@ -1,4 +1,19 @@
 /**
+ * Marks the nav link matching the current page with aria-current="page" so
+ * screen reader users (and the .active CSS hook, if any page wants one) can
+ * tell which section they're in — previously nothing indicated this at all.
+ */
+(function () {
+  const links = document.getElementById("nav-links");
+  if (!links) return;
+  const current = window.location.pathname.split("/").pop() || "index.html";
+  links.querySelectorAll("a[href]").forEach((a) => {
+    const href = a.getAttribute("href").split("/").pop();
+    if (href === current) a.setAttribute("aria-current", "page");
+  });
+})();
+
+/**
  * Mobile hamburger menu. Toggles the .nav-links drawer + backdrop, locks
  * body scroll while open, and closes on link click / backdrop click / Esc.
  */

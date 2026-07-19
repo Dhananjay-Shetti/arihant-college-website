@@ -10,6 +10,13 @@
   --navy-3: #101c33;
   --blue: #0032a0;
   --sky: #1a72cc;
+  /* Separate from --sky (which doubles as a background/gradient color under
+     white text, so it can't also be brightened for foreground-text use
+     without breaking btn-secondary's contrast). --link is text-only: used
+     wherever --sky was previously read as a foreground color on a dark
+     surface. #1a72cc as body-link text only hit 4.00:1 on --navy (fails
+     WCAG AA's 4.5:1 for normal text) — this hits 5.68:1. */
+  --link: #3d8bef;
   --gold: #d4a93a;
   --gold-bright: #f0c563;
   --silver: #a8bacf;
@@ -98,8 +105,24 @@ h3 { font-size: 1.25rem; font-weight: 600; }
 
 p { margin: 0 0 var(--space-4); color: var(--text-muted); }
 
-a { color: var(--sky); text-decoration: none; }
+a { color: var(--link); text-decoration: none; }
 a:hover { color: var(--gold-bright); }
+
+/* Keyboard-only focus ring (WCAG 2.4.7). Skipped for mouse/touch clicks via
+   :focus-visible so it doesn't add a ring to every click, only Tab traversal.
+   Previously only .field inputs and .skip-link had any visible focus state —
+   buttons, nav links, and cards relied on the browser default, which is
+   inconsistent across browsers and easy to lose against a dark background. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
 code {
   background: rgba(168, 186, 207, 0.1);
@@ -164,6 +187,7 @@ code {
   transition: color 0.2s var(--ease);
 }
 .nav-links a:hover { color: var(--white); }
+.nav-links a[aria-current="page"] { color: var(--gold-bright); }
 .nav-cta {
   background: linear-gradient(135deg, var(--gold), var(--gold-bright));
   color: var(--navy) !important;
@@ -351,6 +375,23 @@ section.alt {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 .card h3 { margin-bottom: var(--space-2); }
+
+/* Subtle glow behind a card's headline metric — for the one stat per group
+   that deserves the eye first (e.g. placement rate, fees collected), not
+   applied to every stat card or it stops meaning anything. Static glow, no
+   animation, so it costs nothing for prefers-reduced-motion users. */
+.card-glow { position: relative; overflow: hidden; }
+.card-glow::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -30%;
+  width: 70%;
+  height: 140%;
+  background: radial-gradient(circle, rgba(212, 169, 58, 0.22), transparent 70%);
+  pointer-events: none;
+}
+.card-glow > * { position: relative; z-index: 1; }
 .card p:last-child { margin-bottom: 0; }
 
 .badge {
@@ -396,7 +437,7 @@ section.alt {
 .alert { padding: var(--space-4) var(--space-5); border-radius: var(--radius-sm); margin-bottom: var(--space-4); border: 1px solid transparent; }
 .alert-success { background: rgba(52, 201, 142, 0.1); color: var(--success); border-color: rgba(52, 201, 142, 0.25); }
 .alert-error { background: rgba(239, 106, 106, 0.1); color: var(--error); border-color: rgba(239, 106, 106, 0.25); }
-.alert-info { background: rgba(26, 114, 204, 0.12); color: var(--sky); border-color: rgba(26, 114, 204, 0.3); }
+.alert-info { background: rgba(26, 114, 204, 0.12); color: var(--link); border-color: rgba(26, 114, 204, 0.3); }
 
 /* Mock badge */
 .mock-tag {
