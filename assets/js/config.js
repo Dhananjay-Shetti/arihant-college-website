@@ -10,7 +10,7 @@ const CONFIG = {
 
   // Deployed Apps Script Web App /exec URL, bound to the real Sheet
   // (1roz3mrLS8ZDWrTIFRKi-2UU0lgH9Ij-yu2rTdTEoMQE) via SPREADSHEET_ID script property.
-  API_BASE_URL: "https://script.google.com/macros/s/AKfycbwgnpMGwrYzAJgYUVOTXONq58a71AGLMUA3Rpy3hDqw-fgEBIKr_NQ9v1uBjoE6Y5hF/exec",
+  API_BASE_URL: "https://script.google.com/macros/s/AKfycbw8RpwOj0WUaVQIAXln634BjYf1HjqA5bNo2pnBmjuLz31sRhjNn8E6BfSdvzp6uGWE/exec",
 
   // Matches the API_KEY script property set by runFirstTimeSetup() in Setup.gs.
   API_KEY: "e233408c2bf4318aae7c52d27ffc4619a24ef3247f449602",

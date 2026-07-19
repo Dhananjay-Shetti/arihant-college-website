@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (!t) t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>New Admission Application — Arihant College Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<style>
+  .form-section { margin-bottom: var(--space-7); }
+  .form-section h3 { display:flex; align-items:center; gap: var(--space-3); }
+  .form-section .step-num {
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 26px; height: 26px; border-radius:50%; background: var(--glass);
+    border: 1px solid var(--border-bright); color: var(--gold-bright);
+    font-size: 0.8rem; font-weight: 700; flex-shrink:0;
+  }
+  .same-address-toggle {
+    display:flex; align-items:center; gap: var(--space-3);
+    padding: var(--space-3) var(--space-4); background: var(--glass);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: var(--space-5); cursor: pointer;
+  }
+  .same-address-toggle input { width:18px; height:18px; accent-color: var(--gold); cursor:pointer; }
+  .doc-upload {
+    border: 1px dashed var(--border-bright);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+  .doc-upload.valid { border-style: solid; border-color: rgba(52,201,142,0.4); background: rgba(52,201,142,0.05); }
+  .doc-upload.invalid { border-style: solid; border-color: rgba(239,106,106,0.4); background: rgba(239,106,106,0.05); }
+  .doc-upload label { display:block; font-weight:600; margin-bottom: var(--space-2); }
+  .doc-upload .doc-status { font-size: 0.82rem; margin-top: var(--space-2); color: var(--text-muted); }
+  .doc-upload.valid .doc-status { color: var(--success); }
+  .doc-upload.invalid .doc-status { color: var(--error); }
+  .app-row { display:flex; justify-content:space-between; align-items:center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); gap: var(--space-3); flex-wrap:wrap; }
+  .app-row:last-child { border-bottom:none; }
+</style>
+</head>
+<body>
+<div class="page-loader-overlay" id="page-loader"><span class="spinner spinner-lg"></span></div>
+
+<nav class="site-nav">
+  <div class="container">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt="" class="brand-logo" />Arihant <span>College</span></a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="hamburger"><span></span><span></span><span></span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+      <li><button class="theme-toggle" type="button" aria-label="Toggle theme"></button></li>
+      <li><a href="admin-dashboard.html">Dashboard</a></li>
+      <li id="nav-name" style="color:var(--white);"></li>
+      <li><button class="btn btn-outline" id="logout-btn" style="padding: var(--space-2) var(--space-4); min-height:auto;">Logout</button></li>
+    </ul>
+  </div>
+</nav>
+<div class="nav-backdrop" id="nav-backdrop"></div>
+
+<main id="main">
+  <section class="hero" style="padding-block: var(--space-7) var(--space-6);">
+    <div class="container">
+      <span class="eyebrow" data-reveal>Admin — Admissions Processing</span>
+      <h1 data-reveal>New Admission Application</h1>
+      <p class="lead" data-reveal>Capture applicant details and upload documents directly to Google Drive (<code>CollegeData/AdmissionForms/&lt;Application ID&gt;</code>).</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container" style="max-width: 780px;">
+      <div id="form-alert"></div>
+      <div id="success-card" style="display:none;" class="card">
+        <h3>Application Submitted</h3>
+        <p>Application ID: <strong id="success-app-id"></strong></p>
+        <p><a id="success-drive-link" href="#" target="_blank" rel="noopener">Open the Drive folder</a></p>
+        <button class="btn btn-primary" id="new-application-btn">Start Another Application</button>
+      </div>
+
+      <form id="admission-form">
+        <div class="card form-section" data-reveal>
+          <h3><span class="step-num">1</span> Personal Information</h3>
+          <div class="grid grid-3" style="gap: var(--space-3);">
+            <div class="field">
+              <label for="firstName">First Name *</label>
+              <input id="firstName" required />
+            </div>
+            <div class="field">
+              <label for="middleName">Middle Name</label>
+              <input id="middleName" />
+            </div>
+            <div class="field">
+              <label for="lastName">Last Name *</label>
+              <input id="lastName" required />
+            </div>
+          </div>
+          <div class="grid grid-2" style="gap: var(--space-3);">
+            <div class="field">
+              <label for="dob">Date of Birth *</label>
+              <input id="dob" type="date" required />
+            </div>
+            <div class="field">
+              <label for="mobileNumber">Mobile Number *</label>
+              <input id="mobileNumber" type="tel" pattern="[6-9][0-9]{9}" placeholder="10-digit mobile number" required />
+            </div>
+            <div class="field">
+              <label for="fatherName">Father's Name *</label>
+              <input id="fatherName" required />
+            </div>
+            <div class="field">
+              <label for="motherName">Mother's Name</label>
+              <input id="motherName" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card form-section" data-reveal>
+          <h3><span class="step-num">2</span> Present Address</h3>
+          <div class="field">
+            <label for="presentAddress">Street Address *</label>
+            <input id="presentAddress" required />
+          </div>
+          <div class="grid grid-3" style="gap: var(--space-3);">
+            <div class="field">
+              <label for="presentCity">City *</label>
+              <input id="presentCity" required />
+            </div>
+            <div class="field">
+              <label for="presentState">State *</label>
+              <input id="presentState" required />
+            </div>
+            <div class="field">
+              <label for="presentPincode">Pincode *</label>
+              <input id="presentPincode" pattern="[0-9]{6}" maxlength="6" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="card form-section" data-reveal>
+          <h3><span class="step-num">3</span> Permanent Address</h3>
+          <label class="same-address-toggle">
+            <input type="checkbox" id="same-as-present" />
+            <span>Same as present address</span>
+          </label>
+          <div id="permanent-address-fields">
+            <div class="field">
+              <label for="permanentAddress">Street Address *</label>
+              <input id="permanentAddress" required />
+            </div>
+            <div class="grid grid-3" style="gap: var(--space-3);">
+              <div class="field">
+                <label for="permanentCity">City *</label>
+                <input id="permanentCity" required />
+              </div>
+              <div class="field">
+                <label for="permanentState">State *</label>
+                <input id="permanentState" required />
+              </div>
+              <div class="field">
+                <label for="permanentPincode">Pincode *</label>
+                <input id="permanentPincode" pattern="[0-9]{6}" maxlength="6" required />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card form-section" data-reveal>
+          <h3><span class="step-num">4</span> Program Applied For</h3>
+          <div class="field">
+            <label for="programType">Program *</label>
+            <select id="programType" required>
+              <option value="">Select a program</option>
+              <option value="PUC">PUC</option>
+              <option value="Degree">Degree</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card form-section" data-reveal id="documents-card" style="display:none;">
+          <h3><span class="step-num">5</span> Required Documents</h3>
+          <p class="form-note">PDF, JPG, or PNG — max 5MB each.</p>
+          <div id="documents-list"></div>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Submit Application</button>
+      </form>
+
+      <div class="card" data-reveal style="margin-top: var(--space-7);">
+        <h3>Recent Applications</h3>
+        <div id="recent-applications"><div class="loading-row"><span class="spinner"></span><span>Loading…</span></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><h4>Arihant College</h4><p>Building futures since 1998.</p></div>
+    <div><h4>Quick Links</h4><ul><li><a href="admin-dashboard.html">Dashboard</a></li></ul></div>
+    <div><h4>Contact</h4><ul><li><a href="contact.html">Contact Page</a></li></ul></div>
+    <div><h4>Reach Us</h4><ul><li><button class="btn btn-whatsapp" onclick="openWhatsApp()">WhatsApp Us</button></li></ul></div>
+  </div>
+</footer>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/nav.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/session.js"></script>
+<script src="assets/js/loader.js"></script>
+<script src="assets/js/whatsapp.js"></script>
+<script>
+  const session = Session.require(["admin"]);
+
+  const REQUIRED_DOCS_BY_PROGRAM = {
+    PUC: ["10th Marks Card", "Leaving Certificate", "Caste/Income Certificate"],
+    Degree: ["10th Marks Card", "12th Marks Card", "Leaving Certificate", "Caste/Income Certificate"],
+  };
+  const ALLOWED_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+  const MAX_DOC_BYTES = 5 * 1024 * 1024;
+
+  let selectedFiles = {}; // docType -> File
+
+  function toDdMmYyyy(isoDate) {
+    const [y, m, d] = isoDate.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ---------- Same-as-present address ----------
+  const sameAsPresent = document.getElementById("same-as-present");
+  const permanentFieldsWrap = document.getElementById("permanent-address-fields");
+  const presentIds = ["presentAddress", "presentCity", "presentState", "presentPincode"];
+  const permanentIds = ["permanentAddress", "permanentCity", "permanentState", "permanentPincode"];
+
+  sameAsPresent.addEventListener("change", () => {
+    const checked = sameAsPresent.checked;
+    permanentIds.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (checked) {
+        el.value = document.getElementById(presentIds[i]).value;
+        el.disabled = true;
+      } else {
+        el.disabled = false;
+      }
+    });
+    permanentFieldsWrap.style.opacity = checked ? "0.6" : "1";
+  });
+
+  presentIds.forEach((id, i) => {
+    document.getElementById(id).addEventListener("input", (e) => {
+      if (sameAsPresent.checked) document.getElementById(permanentIds[i]).value = e.target.value;
+    });
+  });
+
+  // ---------- Program type -> document uploads ----------
+  document.getElementById("programType").addEventListener("change", (e) => {
+    const program = e.target.value;
+    const docsCard = document.getElementById("documents-card");
+    const docsList = document.getElementById("documents-list");
+    selectedFiles = {};
+
+    if (!program) {
+      docsCard.style.display = "none";
+      return;
+    }
+
+    docsCard.style.display = "block";
+    const docs = REQUIRED_DOCS_BY_PROGRAM[program];
+    docsList.innerHTML = docs
+      .map(
+        (docType, i) => `
+      <div class="doc-upload" id="doc-upload-${i}" data-doctype="${docType}">
+        <label for="doc-input-${i}">${docType} *</label>
+        <input type="file" id="doc-input-${i}" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" />
+        <div class="doc-status" id="doc-status-${i}">No file selected</div>
+      </div>`
+      )
+      .join("");
+
+    docs.forEach((docType, i) => {
+      document.getElementById(`doc-input-${i}`).addEventListener("change", (ev) => {
+        const file = ev.target.files[0];
+        const wrap = document.getElementById(`doc-upload-${i}`);
+        const status = document.getElementById(`doc-status-${i}`);
+        if (!file) {
+          delete selectedFiles[docType];
+          wrap.className = "doc-upload";
+          status.textContent = "No file selected";
+          return;
+        }
+        if (ALLOWED_MIME_TYPES.indexOf(file.type) === -1) {
+          delete selectedFiles[docType];
+          wrap.className = "doc-upload invalid";
+          status.textContent = "Invalid file type — must be PDF, JPG, or PNG";
+          ev.target.value = "";
+          return;
+        }
+        if (file.size > MAX_DOC_BYTES) {
+          delete selectedFiles[docType];
+          wrap.className = "doc-upload invalid";
+          status.textContent = "File too large — max 5MB";
+          ev.target.value = "";
+          return;
+        }
+        selectedFiles[docType] = file;
+        wrap.className = "doc-upload valid";
+        status.textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+      });
+    });
+  });
+
+  // ---------- Submit ----------
+  document.getElementById("admission-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const alertBox = document.getElementById("form-alert");
+    alertBox.innerHTML = "";
+
+    const program = document.getElementById("programType").value;
+    const requiredDocs = REQUIRED_DOCS_BY_PROGRAM[program] || [];
+    const missingDocs = requiredDocs.filter((docType) => !selectedFiles[docType]);
+    if (missingDocs.length) {
+      alertBox.innerHTML = `<div class="alert alert-error">Missing document(s): ${missingDocs.join(", ")}</div>`;
+      return;
+    }
+
+    const btn = document.getElementById("submit-btn");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner spinner-dark"></span> Uploading documents…`;
+
+    try {
+      const documents = await Promise.all(
+        requiredDocs.map(async (docType) => {
+          const file = selectedFiles[docType];
+          const base64Data = await fileToBase64(file);
+          return { docType, fileName: file.name, mimeType: file.type, base64Data };
+        })
+      );
+
+      const payload = {
+        firstName: document.getElementById("firstName").value.trim(),
+        middleName: document.getElementById("middleName").value.trim(),
+        lastName: document.getElementById("lastName").value.trim(),
+        dob: toDdMmYyyy(document.getElementById("dob").value),
+        fatherName: document.getElementById("fatherName").value.trim(),
+        motherName: document.getElementById("motherName").value.trim(),
+        mobileNumber: document.getElementById("mobileNumber").value.trim(),
+        present: {
+          address: document.getElementById("presentAddress").value.trim(),
+          city: document.getElementById("presentCity").value.trim(),
+          state: document.getElementById("presentState").value.trim(),
+          pincode: document.getElementById("presentPincode").value.trim(),
+        },
+        permanent: {
+          address: document.getElementById("permanentAddress").value.trim(),
+          city: document.getElementById("permanentCity").value.trim(),
+          state: document.getElementById("permanentState").value.trim(),
+          pincode: document.getElementById("permanentPincode").value.trim(),
+        },
+        programType: program,
+        documents,
+      };
+
+      const res = await Api.submitAdmissionApplication(session.token, payload);
+
+      if (Session.handleAuthError(res)) return;
+
+      if (!res.ok) {
+        alertBox.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+        btn.disabled = false;
+        btn.textContent = "Submit Application";
+        return;
+      }
+
+      document.getElementById("admission-form").style.display = "none";
+      document.getElementById("success-card").style.display = "block";
+      document.getElementById("success-app-id").textContent = res.data.applicationId;
+      document.getElementById("success-drive-link").href = res.data.driveFolderUrl;
+      loadRecentApplications();
+    } catch (err) {
+      alertBox.innerHTML = `<div class="alert alert-error">Upload failed: ${err.message}</div>`;
+      btn.disabled = false;
+      btn.textContent = "Submit Application";
+    }
+  });
+
+  document.getElementById("new-application-btn").addEventListener("click", () => {
+    document.getElementById("admission-form").reset();
+    document.getElementById("documents-card").style.display = "none";
+    document.getElementById("documents-list").innerHTML = "";
+    selectedFiles = {};
+    document.getElementById("submit-btn").disabled = false;
+    document.getElementById("submit-btn").textContent = "Submit Application";
+    document.getElementById("success-card").style.display = "none";
+    document.getElementById("admission-form").style.display = "block";
+  });
+
+  async function loadRecentApplications() {
+    const el = document.getElementById("recent-applications");
+    const res = await Api.getAdmissionApplications(session.token);
+    if (Session.handleAuthError(res)) return;
+    if (!res.ok) {
+      el.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+    el.innerHTML = res.data.length
+      ? res.data
+          .map(
+            (a) => `
+        <div class="app-row">
+          <span><strong>${a.applicationId}</strong> — ${a.name} <span class="badge">${a.programType}</span></span>
+          <a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.driveFolderUrl}" target="_blank" rel="noopener">Drive Folder</a>
+        </div>`
+          )
+          .join("")
+      : `<p class="form-note">No applications submitted yet.</p>`;
+  }
+
+  (async () => {
+    if (!session) return;
+    document.getElementById("nav-name").textContent = session.name;
+    document.getElementById("logout-btn").addEventListener("click", () => Session.logout());
+    Loader.hide();
+    await loadRecentApplications();
+    window.initReveal();
+  })();
+</script>
+<script src="assets/js/motion.js"></script>
+</body>
+</html>

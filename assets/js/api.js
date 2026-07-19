@@ -209,6 +209,14 @@ const Api = (() => {
     return realRequest("teacher/ia-marks", "POST", { token, courseId, subject, component, maxMarks, records });
   }
 
+  async function submitAdmissionApplication(token, payload) {
+    return realRequest("admin/admission/submit", "POST", { token, ...payload });
+  }
+
+  async function getAdmissionApplications(token) {
+    return realRequest("admin/admission/list", "GET", null, { token });
+  }
+
   async function getAdminDashboard(token) {
     return realRequest("admin/dashboard", "GET", null, { token });
   }
@@ -261,6 +269,8 @@ const Api = (() => {
     getStudentIaMarks,
     getTeacherIaMarks,
     saveTeacherIaMarks,
+    submitAdmissionApplication,
+    getAdmissionApplications,
     getAdminDashboard,
     getNotices,
     getAdminNotices,
