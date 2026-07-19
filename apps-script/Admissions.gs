@@ -57,6 +57,7 @@ function validateAdmissionPayload(body) {
   if (!isValidDob(body.dob)) return "Date of birth must be a valid DD/MM/YYYY date";
   if (!body.fatherName || !body.fatherName.trim()) return "Father's name is required";
   if (!/^[6-9]\d{9}$/.test(body.mobileNumber || "")) return "Enter a valid 10-digit mobile number";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email || "")) return "Enter a valid email address";
 
   if (!body.present || !body.present.address || !body.present.city || !body.present.state) return "Present address is incomplete";
   if (!/^\d{6}$/.test((body.present || {}).pincode || "")) return "Present address pincode must be 6 digits";
@@ -83,6 +84,91 @@ function validateAdmissionPayload(body) {
   }
 
   return null;
+}
+
+/** Resizes/positions an inserted Slides image to fill the page, preserving its aspect ratio (centered, letterboxed). */
+function fitImageToPage(image, pageWidth, pageHeight) {
+  const w = image.getWidth();
+  const h = image.getHeight();
+  const scale = Math.min(pageWidth / w, pageHeight / h);
+  const newW = w * scale;
+  const newH = h * scale;
+  image.setWidth(newW);
+  image.setHeight(newH);
+  image.setLeft((pageWidth - newW) / 2);
+  image.setTop((pageHeight - newH) / 2);
+}
+
+function addPlaceholderPage(slide, pageWidth, pageHeight, text) {
+  const box = slide.insertTextBox(text, pageWidth * 0.1, pageHeight * 0.4, pageWidth * 0.8, pageHeight * 0.2);
+  box.getText().getTextStyle().setFontSize(16).setBold(true);
+  box.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+}
+
+/**
+ * Compiles one multi-page PDF: page 1 = the submitted-application
+ * screenshot, then one page per required document in program order
+ * (matches REQUIRED_DOCS_BY_PROGRAM, so PUC yields exactly the 3-document
+ * order and Degree extends it with 12th Marks Card).
+ *
+ * Documents uploaded as JPG/PNG are embedded as real page images. Apps
+ * Script has no native way to rasterize an existing PDF's pages into
+ * another PDF — there's no PDF-page-extraction API in the platform, and
+ * this project isn't reaching for a paid third-party PDF service just for
+ * this — so a document uploaded AS a PDF gets a placeholder page here
+ * instead, pointing at the original file. That original is uploaded
+ * individually regardless (see the caller) and is never lost either way.
+ *
+ * Builds the pages in a throwaway Slides file (Slides is the one native
+ * Apps Script service that can lay out full-bleed images per page and
+ * export the whole thing as a real multi-page PDF via getAs(MimeType.PDF))
+ * then trashes it — only the exported PDF is kept.
+ */
+function compileConsolidatedPdf(appFolder, applicationId, screenshotBase64, uploadedDocs, programType) {
+  const presentation = SlidesApp.create(applicationId + "_temp_compile");
+  try {
+    const pageWidth = presentation.getPageWidth();
+    const pageHeight = presentation.getPageHeight();
+    const docOrder = REQUIRED_DOCS_BY_PROGRAM[programType];
+    const totalPages = 1 + docOrder.length;
+
+    const slides = presentation.getSlides();
+    while (slides.length < totalPages) {
+      slides.push(presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK));
+    }
+
+    const screenshotSlide = slides[0];
+    screenshotSlide.getShapes().forEach((shape) => shape.remove());
+    if (screenshotBase64) {
+      const shotBlob = Utilities.newBlob(Utilities.base64Decode(screenshotBase64), "image/png", applicationId + "_screenshot.png");
+      fitImageToPage(screenshotSlide.insertImage(shotBlob), pageWidth, pageHeight);
+    } else {
+      addPlaceholderPage(screenshotSlide, pageWidth, pageHeight, "Application screenshot was not captured.");
+    }
+
+    docOrder.forEach((docType, i) => {
+      const slide = slides[i + 1];
+      slide.getShapes().forEach((shape) => shape.remove());
+      const doc = uploadedDocs.find((d) => d.docType === docType);
+      if (!doc) {
+        addPlaceholderPage(slide, pageWidth, pageHeight, docType + ": not uploaded.");
+      } else if (doc.mimeType === "application/pdf") {
+        addPlaceholderPage(slide, pageWidth, pageHeight, docType + "\n\nOriginal PDF attached separately\nin this Drive folder: " + doc.fileName);
+      } else {
+        fitImageToPage(slide.insertImage(doc.blob), pageWidth, pageHeight);
+      }
+    });
+
+    const pdfBlob = DriveApp.getFileById(presentation.getId()).getAs(MimeType.PDF);
+    pdfBlob.setName(applicationId + "_Consolidated_Admission_Application.pdf");
+    const pdfFile = appFolder.createFile(pdfBlob);
+
+    if (pdfFile.getSize() === 0) throw new Error("Compiled PDF export was empty");
+
+    return { url: pdfFile.getUrl(), id: pdfFile.getId() };
+  } finally {
+    DriveApp.getFileById(presentation.getId()).setTrashed(true);
+  }
 }
 
 function submitAdmissionApplication(e) {
@@ -115,7 +201,7 @@ function submitAdmissionApplication(e) {
       const ext = doc.mimeType === "application/pdf" ? "pdf" : doc.mimeType === "image/png" ? "png" : "jpg";
       const blob = Utilities.newBlob(bytes, doc.mimeType, doc.docType + "." + ext);
       const file = appFolder.createFile(blob);
-      uploaded.push({ docType: doc.docType, fileName: doc.fileName || blob.getName(), mimeType: doc.mimeType, file: file });
+      uploaded.push({ docType: doc.docType, fileName: doc.fileName || blob.getName(), mimeType: doc.mimeType, file: file, blob: blob });
     });
 
     updateRowByKey("Admission_Applications", "ApplicationId", applicationId, {
@@ -134,6 +220,7 @@ function submitAdmissionApplication(e) {
       PermanentState: body.permanent.state,
       PermanentPincode: body.permanent.pincode,
       MobileNumber: body.mobileNumber,
+      Email: body.email.trim(),
       ProgramType: body.programType,
       DriveFolderId: appFolder.getId(),
       DriveFolderUrl: appFolder.getUrl(),
@@ -154,10 +241,35 @@ function submitAdmissionApplication(e) {
       });
     });
 
-    return jsonResponse({
-      ok: true,
-      data: { applicationId: applicationId, driveFolderUrl: appFolder.getUrl(), documentsUploaded: uploaded.length },
-    });
+    // Core application + documents are safely saved at this point — a
+    // compilation failure below must not look like a failed submission.
+    const responseData = { applicationId: applicationId, driveFolderUrl: appFolder.getUrl(), documentsUploaded: uploaded.length };
+    try {
+      const compiled = compileConsolidatedPdf(appFolder, applicationId, body.screenshotBase64, uploaded, body.programType);
+      updateRowByKey("Admission_Applications", "ApplicationId", applicationId, {
+        ConsolidatedPdfUrl: compiled.url,
+        ConsolidatedPdfStatus: "Compiled",
+      });
+      appendRow("Admission_Documents", {
+        DocId: Utilities.getUuid(),
+        ApplicationId: applicationId,
+        DocType: "Consolidated PDF",
+        FileName: applicationId + "_Consolidated_Admission_Application.pdf",
+        MimeType: "application/pdf",
+        DriveFileId: compiled.id,
+        DriveFileUrl: compiled.url,
+        UploadedAt: new Date(),
+      });
+      responseData.consolidatedPdfUrl = compiled.url;
+    } catch (compileErr) {
+      logError("admin/admission/submit (PDF compile)", compileErr);
+      updateRowByKey("Admission_Applications", "ApplicationId", applicationId, {
+        ConsolidatedPdfStatus: "Failed: " + compileErr.message,
+      });
+      responseData.consolidatedPdfWarning = "The application and individual documents were saved successfully, but the consolidated PDF could not be compiled: " + compileErr.message;
+    }
+
+    return jsonResponse({ ok: true, data: responseData });
   } catch (err) {
     updateRowByKey("Admission_Applications", "ApplicationId", applicationId, { Status: "Failed: " + err.message });
     logError("admin/admission/submit", err);
@@ -177,8 +289,11 @@ function listAdmissionApplications(e) {
       applicationId: r.ApplicationId,
       name: [r.FirstName, r.MiddleName, r.LastName].filter(Boolean).join(" "),
       mobileNumber: r.MobileNumber,
+      email: r.Email,
       programType: r.ProgramType,
       driveFolderUrl: r.DriveFolderUrl,
+      consolidatedPdfUrl: r.ConsolidatedPdfUrl,
+      consolidatedPdfStatus: r.ConsolidatedPdfStatus,
       createdAt: r.CreatedAt,
     }));
 

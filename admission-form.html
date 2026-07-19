@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="assets/css/style.css" />
 <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   .form-section { margin-bottom: var(--space-7); }
   .form-section h3 { display:flex; align-items:center; gap: var(--space-3); }
@@ -48,6 +49,31 @@
   .doc-upload.invalid .doc-status { color: var(--error); }
   .app-row { display:flex; justify-content:space-between; align-items:center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); gap: var(--space-3); flex-wrap:wrap; }
   .app-row:last-child { border-bottom:none; }
+
+  /* Off-screen (not display:none — html2canvas needs it actually laid out)
+     printable summary, captured as page 1 of the compiled PDF. Styled as a
+     plain white document regardless of site theme, not the live form UI. */
+  #print-summary {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 794px;
+    background: #ffffff;
+    color: #101418;
+    font-family: "Barlow", system-ui, sans-serif;
+    padding: 48px;
+  }
+  #print-summary .ps-header { display:flex; align-items:center; gap:16px; border-bottom: 3px solid #0b2545; padding-bottom: 16px; margin-bottom: 24px; }
+  #print-summary .ps-header img { width: 56px; height: 56px; }
+  #print-summary .ps-header h2 { margin:0; color:#0b2545; font-size: 1.4rem; }
+  #print-summary .ps-header p { margin:0; color:#5b6572; font-size:0.85rem; }
+  #print-summary .ps-title { text-align:center; font-size:1.1rem; font-weight:700; color:#0b2545; margin-bottom: 24px; text-transform:uppercase; letter-spacing:0.05em; }
+  #print-summary .ps-section-title { font-size:0.85rem; font-weight:700; color:#d4a93a; text-transform:uppercase; letter-spacing:0.05em; margin: 20px 0 8px; border-bottom:1px solid #e5e8ec; padding-bottom:4px; }
+  #print-summary .ps-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
+  #print-summary .ps-row { font-size:0.9rem; }
+  #print-summary .ps-label { color:#5b6572; display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.03em; }
+  #print-summary .ps-value { color:#101418; font-weight:600; }
+  #print-summary .ps-footer { margin-top:32px; padding-top:16px; border-top:1px solid #e5e8ec; font-size:0.75rem; color:#5b6572; }
 </style>
 </head>
 <body>
@@ -85,6 +111,8 @@
         <h3>Application Submitted</h3>
         <p>Application ID: <strong id="success-app-id"></strong></p>
         <p><a id="success-drive-link" href="#" target="_blank" rel="noopener">Open the Drive folder</a></p>
+        <p><a id="success-pdf-link" href="#" target="_blank" rel="noopener" style="display:none;">Download the compiled admission PDF</a></p>
+        <div id="success-pdf-warning" class="form-note" style="display:none; color: var(--warning); margin-bottom: var(--space-4);"></div>
         <button class="btn btn-primary" id="new-application-btn">Start Another Application</button>
       </div>
 
@@ -105,7 +133,7 @@
               <input id="lastName" required />
             </div>
           </div>
-          <div class="grid grid-2" style="gap: var(--space-3);">
+          <div class="grid grid-3" style="gap: var(--space-3);">
             <div class="field">
               <label for="dob">Date of Birth *</label>
               <input id="dob" type="date" required />
@@ -113,6 +141,10 @@
             <div class="field">
               <label for="mobileNumber">Mobile Number *</label>
               <input id="mobileNumber" type="tel" pattern="[6-9][0-9]{9}" placeholder="10-digit mobile number" required />
+            </div>
+            <div class="field">
+              <label for="email">Email ID *</label>
+              <input id="email" type="email" placeholder="applicant@example.com" required />
             </div>
             <div class="field">
               <label for="fatherName">Father's Name *</label>
@@ -196,6 +228,37 @@
         <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Submit Application</button>
       </form>
 
+      <!-- Off-screen only — rendered to a canvas via html2canvas right before
+           submit, becomes page 1 of the compiled PDF. Not the raw form UI. -->
+      <div id="print-summary">
+        <div class="ps-header">
+          <img src="assets/img/logo.svg" alt="" />
+          <div>
+            <h2>Arihant College</h2>
+            <p>Admission Application Record</p>
+          </div>
+        </div>
+        <div class="ps-title" id="ps-program-title">Program: —</div>
+
+        <div class="ps-section-title">Personal Information</div>
+        <div class="ps-grid">
+          <div class="ps-row"><span class="ps-label">Full Name</span><span class="ps-value" id="ps-name">—</span></div>
+          <div class="ps-row"><span class="ps-label">Date of Birth</span><span class="ps-value" id="ps-dob">—</span></div>
+          <div class="ps-row"><span class="ps-label">Father's Name</span><span class="ps-value" id="ps-father">—</span></div>
+          <div class="ps-row"><span class="ps-label">Mother's Name</span><span class="ps-value" id="ps-mother">—</span></div>
+          <div class="ps-row"><span class="ps-label">Mobile Number</span><span class="ps-value" id="ps-mobile">—</span></div>
+          <div class="ps-row"><span class="ps-label">Email ID</span><span class="ps-value" id="ps-email">—</span></div>
+        </div>
+
+        <div class="ps-section-title">Present Address</div>
+        <div class="ps-row"><span class="ps-value" id="ps-present-address">—</span></div>
+
+        <div class="ps-section-title">Permanent Address</div>
+        <div class="ps-row"><span class="ps-value" id="ps-permanent-address">—</span></div>
+
+        <div class="ps-footer" id="ps-generated">Generated on —</div>
+      </div>
+
       <div class="card" data-reveal style="margin-top: var(--space-7);">
         <h3>Recent Applications</h3>
         <div id="recent-applications"><div class="loading-row"><span class="spinner"></span><span>Loading…</span></div></div>
@@ -244,6 +307,38 @@
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  function formatAddress(addr) {
+    return `${addr.address}, ${addr.city}, ${addr.state} - ${addr.pincode}`;
+  }
+
+  /**
+   * Fills the hidden #print-summary with the values about to be submitted,
+   * captures it via html2canvas, and returns a base64 PNG (no data: prefix)
+   * for page 1 of the compiled PDF — or null if capture fails, since a
+   * missing screenshot shouldn't block the rest of the submission (the
+   * documents and application data matter more than this cosmetic page).
+   */
+  async function captureFormScreenshot(payload, name) {
+    try {
+      document.getElementById("ps-program-title").textContent = "Program Applied For: " + payload.programType;
+      document.getElementById("ps-name").textContent = name;
+      document.getElementById("ps-dob").textContent = payload.dob;
+      document.getElementById("ps-father").textContent = payload.fatherName;
+      document.getElementById("ps-mother").textContent = payload.motherName || "—";
+      document.getElementById("ps-mobile").textContent = payload.mobileNumber;
+      document.getElementById("ps-email").textContent = payload.email;
+      document.getElementById("ps-present-address").textContent = formatAddress(payload.present);
+      document.getElementById("ps-permanent-address").textContent = formatAddress(payload.permanent);
+      document.getElementById("ps-generated").textContent = "Generated on " + new Date().toLocaleString("en-IN");
+
+      const canvas = await html2canvas(document.getElementById("print-summary"), { scale: 2, backgroundColor: "#ffffff" });
+      return canvas.toDataURL("image/png").split(",")[1];
+    } catch (err) {
+      console.error("Screenshot capture failed, continuing without it:", err);
+      return null;
+    }
   }
 
   // ---------- Same-as-present address ----------
@@ -364,6 +459,7 @@
         fatherName: document.getElementById("fatherName").value.trim(),
         motherName: document.getElementById("motherName").value.trim(),
         mobileNumber: document.getElementById("mobileNumber").value.trim(),
+        email: document.getElementById("email").value.trim(),
         present: {
           address: document.getElementById("presentAddress").value.trim(),
           city: document.getElementById("presentCity").value.trim(),
@@ -380,6 +476,11 @@
         documents,
       };
 
+      const fullName = [payload.firstName, payload.middleName, payload.lastName].filter(Boolean).join(" ");
+      btn.innerHTML = `<span class="spinner spinner-dark"></span> Capturing application record…`;
+      payload.screenshotBase64 = await captureFormScreenshot(payload, fullName);
+
+      btn.innerHTML = `<span class="spinner spinner-dark"></span> Submitting…`;
       const res = await Api.submitAdmissionApplication(session.token, payload);
 
       if (Session.handleAuthError(res)) return;
@@ -395,6 +496,18 @@
       document.getElementById("success-card").style.display = "block";
       document.getElementById("success-app-id").textContent = res.data.applicationId;
       document.getElementById("success-drive-link").href = res.data.driveFolderUrl;
+
+      const pdfLinkEl = document.getElementById("success-pdf-link");
+      if (res.data.consolidatedPdfUrl) {
+        pdfLinkEl.href = res.data.consolidatedPdfUrl;
+        pdfLinkEl.style.display = "inline";
+      } else {
+        pdfLinkEl.style.display = "none";
+      }
+      const pdfWarningEl = document.getElementById("success-pdf-warning");
+      pdfWarningEl.style.display = res.data.consolidatedPdfWarning ? "block" : "none";
+      pdfWarningEl.textContent = res.data.consolidatedPdfWarning || "";
+
       loadRecentApplications();
     } catch (err) {
       alertBox.innerHTML = `<div class="alert alert-error">Upload failed: ${err.message}</div>`;
@@ -411,6 +524,8 @@
     document.getElementById("submit-btn").disabled = false;
     document.getElementById("submit-btn").textContent = "Submit Application";
     document.getElementById("success-card").style.display = "none";
+    document.getElementById("success-pdf-link").style.display = "none";
+    document.getElementById("success-pdf-warning").style.display = "none";
     document.getElementById("admission-form").style.display = "block";
   });
 
@@ -428,7 +543,10 @@
             (a) => `
         <div class="app-row">
           <span><strong>${a.applicationId}</strong> — ${a.name} <span class="badge">${a.programType}</span></span>
-          <a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.driveFolderUrl}" target="_blank" rel="noopener">Drive Folder</a>
+          <span style="display:flex; gap: var(--space-2);">
+            <a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.driveFolderUrl}" target="_blank" rel="noopener">Drive Folder</a>
+            ${a.consolidatedPdfUrl ? `<a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.consolidatedPdfUrl}" target="_blank" rel="noopener">PDF</a>` : ""}
+          </span>
         </div>`
           )
           .join("")
