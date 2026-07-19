@@ -10,7 +10,8 @@ No build step, no framework, no npm dependencies — plain HTML/CSS/JS served as
   API over `doGet`/`doPost` with a `?path=` query param acting as the route.
 - **Database**: a single Google Sheet, one tab per entity (`Settings`, `Courses`,
   `Departments`, `Faculty`, `Gallery`, `FAQ`, `Admissions_Enquiries`, `Fee_Structures`,
-  `Payments_Log`, `Students`, `Teachers`, `Admins`, `Sessions`, `Attendance`, `Notices`).
+  `Payments_Log`, `Students`, `Teachers`, `Admins`, `Sessions`, `Attendance`, `Notices`,
+  `IA_Marks`, `IA_Marks_Audit`).
 - **Payments**: PhonePe Standard Checkout (redirect + server-to-server callback).
 - **WhatsApp**: plain `wa.me` click-to-chat links, no Business API.
 - **Auth**: password-based login for Student/Teacher/Admin — salted SHA-256 hash
@@ -18,11 +19,25 @@ No build step, no framework, no npm dependencies — plain HTML/CSS/JS served as
   `Sessions`. Not Google OAuth, not hardened — see the security note in
   [README.md](README.md#login-credentials-demo-data). Public status lookup
   (`status.html`) is separate and unrelated: it matches Admission ID/mobile/email
-  with no password, read-only.
-- **Dashboards**: `student-dashboard.html` (attendance + fees + receipts),
-  `teacher-dashboard.html` (mark attendance by class/date), `admin-dashboard.html`
-  (fee/attendance stats, notices CRUD, homepage hero-text editor). All three call
-  role-gated endpoints (`requireRole(token, [...])` in the relevant `.gs` file).
+  with no password, read-only. Every dashboard page calls
+  `Session.handleAuthError(res)` after its first fetch — if the backend says
+  `Unauthorized` (token expired/invalidated), the stale local session is
+  cleared and the user is bounced to `login.html?expired=1` instead of the
+  page failing silently.
+- **Dashboards**: `student-dashboard.html` (attendance + fees + receipts + IA
+  marks), `teacher-dashboard.html` (mark attendance by class/date, enter/update
+  IA marks by course+subject+component), `admin-dashboard.html` (fee/attendance
+  stats, notices CRUD, homepage hero-text editor). All three call role-gated
+  endpoints (`requireRole(token, [...])` in the relevant `.gs` file).
+- **IA marks**: `IA_Marks` (one row per student+course+subject+component) plus
+  `IA_Marks_Audit` (old value, new value, who, when — written on every create
+  *and* update, see `apps-script/IAMarks.gs`). Subject is free text, not a
+  managed catalog — there's no per-course subject list in this schema.
+- **Client-side caching**: `Api.getSettings/getCourses/getNotices` cache their
+  response in `sessionStorage` for 5 minutes (`assets/js/api.js`), so
+  navigating around the public site doesn't re-hit the Sheet on every page.
+  `saveAdminSettings`/`saveAdminNotice`/`deleteAdminNotice` bust the matching
+  cache key so same-tab admin edits show up immediately.
 
 ## Current state
 
@@ -50,11 +65,12 @@ how the sheet tabs/headers/seed data and Script Properties got created.
 
 ## Deploying the Apps Script backend
 
-Seven files go into the Apps Script project, unchanged in name:
+Eight files go into the Apps Script project, unchanged in name:
 - `apps-script/Code.gs` — router (`doGet`/`doPost`) + read endpoints + enquiry write
 - `apps-script/Sheets.gs` — generic Sheet helpers (`readSheet`, `appendRow`, `updateRowByKey`, `findRowByKey`, `deleteRowByKey`, `clearDataRows`, `upsertRow`, `toDateKey`)
 - `apps-script/Auth.gs` — `hashPassword`, `login`, `logout`, `authenticate`, `requireRole`
 - `apps-script/Attendance.gs` — student dashboard, teacher dashboard/roster/mark-attendance
+- `apps-script/IAMarks.gs` — student IA marks view, teacher IA marks roster/upsert + audit trail
 - `apps-script/Admin.gs` — admin dashboard stats, notices CRUD, Settings editor
 - `apps-script/PhonePe.gs` — PhonePe initiate/callback handlers
 - `apps-script/Setup.gs` — `setupSheets`/`resetDemoData`/`runFirstTimeSetup` (dev/setup only, not part of the request-handling path)

@@ -26,6 +26,10 @@
   }
   .status-btn.present.active { background: rgba(52,201,142,0.15); color: var(--success); border-color: rgba(52,201,142,0.4); }
   .status-btn.absent.active { background: rgba(239,106,106,0.15); color: var(--error); border-color: rgba(239,106,106,0.4); }
+  .mode-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-5); background: var(--glass); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
+  .mode-tab { flex: 1; text-align: center; padding: var(--space-2) var(--space-3); border-radius: 999px; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; transition: all 0.2s var(--ease); user-select: none; }
+  .mode-tab.active { background: linear-gradient(135deg, var(--blue), var(--sky)); color: var(--white); }
+  .ia-input { width: 90px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(240,245,255,0.03); color: var(--white); font-family: inherit; }
 </style>
 </head>
 <body>
@@ -63,14 +67,44 @@
       </div>
 
       <div class="card" data-reveal>
+        <div class="mode-tabs">
+          <div class="mode-tab active" data-mode="attendance">Attendance</div>
+          <div class="mode-tab" data-mode="ia">IA Marks</div>
+        </div>
+
         <h3 id="roster-heading">Attendance</h3>
         <div class="field" id="date-field" style="display:none;">
           <label for="attendance-date">Date</label>
           <input id="attendance-date" type="date" />
         </div>
+
+        <div id="ia-fields" style="display:none;">
+          <div class="field">
+            <label for="ia-subject">Subject</label>
+            <input id="ia-subject" type="text" placeholder="e.g. Data Structures" />
+          </div>
+          <div class="grid grid-2" style="gap: var(--space-3);">
+            <div class="field">
+              <label for="ia-component">Component</label>
+              <select id="ia-component">
+                <option value="IA1">IA1</option>
+                <option value="IA2">IA2</option>
+                <option value="Assignment">Assignment</option>
+                <option value="Project">Project</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="ia-max-marks">Max Marks</label>
+              <input id="ia-max-marks" type="number" min="1" value="20" />
+            </div>
+          </div>
+          <button class="btn btn-outline btn-block" id="load-ia-btn" type="button" style="margin-bottom: var(--space-4);">Load Roster</button>
+        </div>
+
         <div id="roster-alert"></div>
         <div id="roster-list"><p class="form-note">Pick a class to load the roster.</p></div>
         <button class="btn btn-primary btn-block" id="save-attendance-btn" style="display:none; margin-top: var(--space-4);">Save Attendance</button>
+        <button class="btn btn-primary btn-block" id="save-ia-btn" style="display:none; margin-top: var(--space-4);">Save IA Marks</button>
       </div>
     </div>
   </section>
@@ -94,6 +128,7 @@
 <script>
   const session = Session.require(["teacher"]);
   let currentCourse = null;
+  let mode = "attendance"; // "attendance" | "ia"
   let rosterState = {}; // studentId -> "Present" | "Absent"
 
   function todayStr() {
@@ -101,9 +136,32 @@
     return d.toISOString().slice(0, 10);
   }
 
-  async function loadRoster(courseId) {
-    currentCourse = courseId;
-    document.querySelectorAll(".class-pill").forEach((el) => el.classList.toggle("active", el.dataset.course === courseId));
+  document.querySelectorAll(".mode-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".mode-tab").forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      mode = tab.dataset.mode;
+
+      document.getElementById("date-field").style.display = mode === "attendance" && currentCourse ? "block" : "none";
+      document.getElementById("ia-fields").style.display = mode === "ia" && currentCourse ? "block" : "none";
+      document.getElementById("save-attendance-btn").style.display = "none";
+      document.getElementById("save-ia-btn").style.display = "none";
+      document.getElementById("roster-alert").innerHTML = "";
+      document.getElementById("roster-heading").textContent = currentCourse
+        ? (mode === "attendance" ? "Attendance — " + currentCourse : "IA Marks — " + currentCourse)
+        : (mode === "attendance" ? "Attendance" : "IA Marks");
+
+      if (mode === "attendance" && currentCourse) {
+        loadAttendanceRoster(currentCourse);
+      } else {
+        document.getElementById("roster-list").innerHTML = mode === "ia"
+          ? `<p class="form-note">Enter subject/component above, then click Load Roster.</p>`
+          : `<p class="form-note">Pick a class to load the roster.</p>`;
+      }
+    });
+  });
+
+  async function loadAttendanceRoster(courseId) {
     document.getElementById("date-field").style.display = "block";
     document.getElementById("save-attendance-btn").style.display = "block";
     document.getElementById("roster-heading").textContent = "Attendance — " + courseId;
@@ -146,7 +204,7 @@
   }
 
   document.getElementById("attendance-date").addEventListener("change", () => {
-    if (currentCourse) loadRoster(currentCourse);
+    if (currentCourse && mode === "attendance") loadAttendanceRoster(currentCourse);
   });
 
   document.getElementById("save-attendance-btn").addEventListener("click", async () => {
@@ -168,6 +226,82 @@
       : `<div class="alert alert-error">${res.error}</div>`;
   });
 
+  document.getElementById("load-ia-btn").addEventListener("click", async () => {
+    const alertBox = document.getElementById("roster-alert");
+    const subject = document.getElementById("ia-subject").value.trim();
+    const component = document.getElementById("ia-component").value;
+    const maxMarks = Number(document.getElementById("ia-max-marks").value);
+    alertBox.innerHTML = "";
+
+    if (!currentCourse) return;
+    if (!subject) {
+      alertBox.innerHTML = `<div class="alert alert-error">Enter a subject name first.</div>`;
+      return;
+    }
+    if (!maxMarks || maxMarks <= 0) {
+      alertBox.innerHTML = `<div class="alert alert-error">Max marks must be a positive number.</div>`;
+      return;
+    }
+
+    const rosterEl = document.getElementById("roster-list");
+    rosterEl.innerHTML = `<div class="loading-row"><span class="spinner"></span><span>Loading roster…</span></div>`;
+
+    const res = await Api.getTeacherIaMarks(session.token, currentCourse, subject, component);
+    if (!res.ok) {
+      rosterEl.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
+      return;
+    }
+
+    rosterEl.innerHTML = res.data.students.length
+      ? res.data.students.map((s) => `
+          <div class="roster-row" data-student="${s.studentId}">
+            <span>${s.name} <span class="form-note">(${s.admissionId})</span></span>
+            <input class="ia-input" type="number" min="0" max="${maxMarks}" step="1"
+              placeholder="/ ${maxMarks}" value="${s.marksObtained !== null ? s.marksObtained : ""}" />
+          </div>`).join("")
+      : `<p class="form-note">No students enrolled in this course yet.</p>`;
+
+    document.getElementById("save-ia-btn").style.display = res.data.students.length ? "block" : "none";
+  });
+
+  document.getElementById("save-ia-btn").addEventListener("click", async () => {
+    const alertBox = document.getElementById("roster-alert");
+    const subject = document.getElementById("ia-subject").value.trim();
+    const component = document.getElementById("ia-component").value;
+    const maxMarks = Number(document.getElementById("ia-max-marks").value);
+
+    const rows = document.querySelectorAll("#roster-list .roster-row");
+    const records = [];
+    for (const row of rows) {
+      const input = row.querySelector(".ia-input");
+      const raw = input.value.trim();
+      if (raw === "") continue;
+      const marks = Number(raw);
+      if (isNaN(marks) || marks < 0 || marks > maxMarks) {
+        alertBox.innerHTML = `<div class="alert alert-error">Marks must be between 0 and ${maxMarks} for every entered student.</div>`;
+        return;
+      }
+      records.push({ studentId: row.dataset.student, marks });
+    }
+    if (!records.length) {
+      alertBox.innerHTML = `<div class="alert alert-error">Enter at least one student's marks.</div>`;
+      return;
+    }
+
+    const btn = document.getElementById("save-ia-btn");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner spinner-dark"></span> Saving…`;
+
+    const res = await Api.saveTeacherIaMarks(session.token, currentCourse, subject, component, maxMarks, records);
+
+    btn.disabled = false;
+    btn.textContent = "Save IA Marks";
+
+    alertBox.innerHTML = res.ok
+      ? `<div class="alert alert-success">IA marks saved for ${res.data.saved} student(s).</div>`
+      : `<div class="alert alert-error">${res.error}</div>`;
+  });
+
   (async () => {
     if (!session) return;
     document.getElementById("nav-name").textContent = session.name;
@@ -175,6 +309,7 @@
 
     const res = await Api.getTeacherDashboard(session.token);
     Loader.hide();
+    if (Session.handleAuthError(res)) return;
     if (!res.ok) {
       document.querySelector("main .container").innerHTML = `<div class="alert alert-error">${res.error}</div>`;
       return;
@@ -192,7 +327,21 @@
       : `<p class="form-note">No classes assigned yet.</p>`;
 
     classListEl.querySelectorAll(".class-pill").forEach((el) => {
-      el.addEventListener("click", () => loadRoster(el.dataset.course));
+      el.addEventListener("click", () => {
+        currentCourse = el.dataset.course;
+        classListEl.querySelectorAll(".class-pill").forEach((p) => p.classList.toggle("active", p === el));
+        document.getElementById("save-attendance-btn").style.display = "none";
+        document.getElementById("save-ia-btn").style.display = "none";
+        document.getElementById("roster-alert").innerHTML = "";
+
+        if (mode === "attendance") {
+          loadAttendanceRoster(currentCourse);
+        } else {
+          document.getElementById("ia-fields").style.display = "block";
+          document.getElementById("roster-heading").textContent = "IA Marks — " + currentCourse;
+          document.getElementById("roster-list").innerHTML = `<p class="form-note">Enter subject/component above, then click Load Roster.</p>`;
+        }
+      });
     });
 
     window.initReveal();
