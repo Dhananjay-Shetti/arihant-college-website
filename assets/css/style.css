@@ -421,7 +421,7 @@ body.nav-open { overflow: hidden; }
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(7, 13, 26, 0.55) 0%, rgba(7, 13, 26, 0.82) 65%, var(--navy) 100%);
+  background: linear-gradient(180deg, rgba(7, 13, 26, 0.55) 0%, rgba(7, 13, 26, 0.3) 65%, var(--navy) 100%);
 }
 .hero-video .container { position: relative; z-index: 2; }
 
