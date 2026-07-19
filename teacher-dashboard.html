@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (!t) t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Teacher Dashboard — Arihant College</title>
@@ -38,6 +47,7 @@
         <span class="hamburger"><span></span><span></span><span></span></span>
       </button>
       <ul class="nav-links" id="nav-links">
+      <li><button class="theme-toggle" type="button" aria-label="Toggle theme"></button></li>
       <li><a href="index.html">Home</a></li>
       <li id="nav-name" style="color:var(--white);"></li>
       <li><button class="btn btn-outline" id="logout-btn" style="padding: var(--space-2) var(--space-4); min-height:auto;">Logout</button></li>
@@ -85,6 +95,7 @@
   </div>
 </footer>
 
+<script src="assets/js/theme.js"></script>
 <script src="assets/js/nav.js"></script>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/api.js"></script>

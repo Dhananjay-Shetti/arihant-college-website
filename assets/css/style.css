@@ -43,6 +43,39 @@
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/*
+ * Light theme — overrides the same token names, so every component below
+ * (which all reference var(--navy)/var(--white)/var(--silver)/etc, never
+ * literal colors) re-themes automatically. Note --white/--navy keep their
+ * names but not their literal meaning here — --white is "primary text
+ * color" and --navy is "page background" regardless of theme; renaming
+ * every token across 11 pages wasn't worth it for a cosmetic mismatch.
+ * Toggled via [data-theme="light"] on <html> — see assets/js/theme.js.
+ */
+:root[data-theme="light"] {
+  --navy: #f4f6fb;
+  --navy-2: #ffffff;
+  --navy-3: #eef1f7;
+  --blue: #0032a0;
+  --sky: #1a72cc;
+  --gold: #b8791f;
+  --gold-bright: #9c6414;
+  --silver: #5b6572;
+  --white: #101828;
+  --success: #1e8e5a;
+  --error: #c4372b;
+  --warning: #9c6414;
+
+  --glass: rgba(11, 37, 69, 0.04);
+  --glass-strong: rgba(255, 255, 255, 0.8);
+  --border: rgba(11, 37, 69, 0.12);
+  --border-bright: rgba(26, 114, 204, 0.35);
+}
+:root[data-theme="light"] body::before { opacity: 0.5; }
+:root[data-theme="light"] body::after { opacity: 0.4; }
+:root[data-theme="light"] .card { box-shadow: 0 4px 20px rgba(11, 37, 69, 0.08); }
+:root[data-theme="light"] .card:hover { box-shadow: 0 16px 40px rgba(11, 37, 69, 0.14); }
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; background: var(--bg); }
@@ -173,6 +206,25 @@ code {
 }
 .nav-cta:hover { filter: brightness(1.06); }
 
+.theme-toggle {
+  background: rgba(240, 245, 255, 0.06);
+  border: 1px solid var(--border);
+  color: var(--white);
+  width: 38px;
+  height: 38px;
+  min-height: auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.theme-toggle:hover { border-color: var(--border-bright); transform: translateY(-1px); }
+.theme-toggle svg { width: 18px; height: 18px; display: block; }
+
 /* ---------- Mobile nav (hamburger) ---------- */
 .nav-toggle {
   display: none;
@@ -243,6 +295,7 @@ body.nav-open { overflow: hidden; }
   .nav-links a, .nav-links button { display: block; width: 100%; padding: var(--space-3) 0; text-align: left; }
   .nav-links .nav-cta { padding: var(--space-3) var(--space-5); text-align: center; margin-top: var(--space-3); }
   .nav-links .btn-outline { width: auto; }
+  .nav-links .theme-toggle { display: inline-flex; width: 38px; height: 38px; padding: 0; margin-bottom: var(--space-2); }
 
   .nav-backdrop.open { display: block; }
 }
@@ -315,6 +368,29 @@ body.nav-open { overflow: hidden; }
   font-size: 1.1rem;
 }
 .hero-ctas { display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap; margin-top: var(--space-6); }
+
+.hero-video { min-height: 520px; display: flex; align-items: center; }
+.hero-video-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-video-bg iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 0;
+}
+.hero-video-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(7, 13, 26, 0.55) 0%, rgba(7, 13, 26, 0.82) 65%, var(--navy) 100%);
+}
+.hero-video .container { position: relative; z-index: 2; }
 
 /* ---------- Sections ---------- */
 section { padding-block: var(--space-8); position: relative; }

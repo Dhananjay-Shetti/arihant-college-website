@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (!t) t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Arihant College — Admissions Open</title>
@@ -39,6 +48,7 @@
         <span class="hamburger"><span></span><span></span><span></span></span>
       </button>
       <ul class="nav-links" id="nav-links">
+      <li><button class="theme-toggle" type="button" aria-label="Toggle theme"></button></li>
       <li><a href="index.html">Home</a></li>
       <li><a href="admissions.html">Admissions</a></li>
       <li><a href="fees.html">Fees</a></li>
@@ -52,7 +62,18 @@
 <div class="nav-backdrop" id="nav-backdrop"></div>
 
 <main id="main">
-  <section class="hero">
+  <section class="hero hero-video">
+    <div class="hero-video-bg" id="hero-video-bg" aria-hidden="true">
+      <iframe
+        id="hero-video-iframe"
+        src="https://www.youtube.com/embed/G4cRm1g_RhA?autoplay=1&mute=1&loop=1&playlist=G4cRm1g_RhA&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&iv_load_policy=3"
+        title=""
+        frameborder="0"
+        allow="autoplay; encrypted-media"
+        tabindex="-1"
+      ></iframe>
+    </div>
+    <div class="hero-video-overlay"></div>
     <div class="container">
       <span class="eyebrow" data-reveal id="hero-eyebrow">Admissions Open — 2026 Batch</span>
       <h1 data-reveal id="hero-title">Shape Your Future at Arihant College</h1>
@@ -171,11 +192,42 @@
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="assets/js/theme.js"></script>
 <script src="assets/js/nav.js"></script>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/api.js"></script>
 <script src="assets/js/whatsapp.js"></script>
 <script>
+  // Cover-fits the hero background video regardless of container or source
+  // aspect ratio (same math as CSS background-size:cover, done in JS because
+  // iframes don't support object-fit reliably). Source is a YouTube Short
+  // (9:16 portrait) — a landscape source would need less cropping here, but
+  // this works correctly for either orientation.
+  (function () {
+    const wrap = document.getElementById("hero-video-bg");
+    const iframe = document.getElementById("hero-video-iframe");
+    if (!wrap || !iframe) return;
+    const sourceAspect = 9 / 16;
+
+    function resize() {
+      const cw = wrap.clientWidth;
+      const ch = wrap.clientHeight;
+      const containerAspect = cw / ch;
+      let w, h;
+      if (containerAspect > sourceAspect) {
+        w = cw;
+        h = cw / sourceAspect;
+      } else {
+        h = ch;
+        w = ch * sourceAspect;
+      }
+      iframe.style.width = w + "px";
+      iframe.style.height = h + "px";
+    }
+    resize();
+    window.addEventListener("resize", resize);
+  })();
+
   // TODO: paste a real YouTube video ID here once campus footage is available
   // (e.g. "dQw4w9WgXcQ" from youtube.com/watch?v=dQw4w9WgXcQ). Leave blank to
   // keep the "coming soon" placeholder.
