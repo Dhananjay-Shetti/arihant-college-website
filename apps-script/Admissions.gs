@@ -241,6 +241,30 @@ function submitAdmissionApplication(e) {
       });
     });
 
+    // Save the screenshot as its own file in the folder — not just embedded
+    // as page 1 of the compiled PDF below. An admin browsing the folder
+    // listing directly (the common case) never opens a PDF to check its
+    // first page; it needs to be a visible file on its own, and it needs to
+    // exist independently of whether PDF compilation below succeeds.
+    if (body.screenshotBase64) {
+      try {
+        const shotBlob = Utilities.newBlob(Utilities.base64Decode(body.screenshotBase64), "image/png", applicationId + "_Screenshot.png");
+        const shotFile = appFolder.createFile(shotBlob);
+        appendRow("Admission_Documents", {
+          DocId: Utilities.getUuid(),
+          ApplicationId: applicationId,
+          DocType: "Screenshot",
+          FileName: shotBlob.getName(),
+          MimeType: "image/png",
+          DriveFileId: shotFile.getId(),
+          DriveFileUrl: shotFile.getUrl(),
+          UploadedAt: new Date(),
+        });
+      } catch (shotErr) {
+        logError("admin/admission/submit (screenshot save)", shotErr);
+      }
+    }
+
     // Core application + documents are safely saved at this point — a
     // compilation failure below must not look like a failed submission.
     const responseData = { applicationId: applicationId, driveFolderUrl: appFolder.getUrl(), documentsUploaded: uploaded.length };
@@ -295,6 +319,25 @@ function listAdmissionApplications(e) {
       consolidatedPdfUrl: r.ConsolidatedPdfUrl,
       consolidatedPdfStatus: r.ConsolidatedPdfStatus,
       createdAt: r.CreatedAt,
+    }));
+
+  return jsonResponse({ ok: true, data: rows });
+}
+
+/** Every file uploaded/generated for one application — individual documents, the screenshot, and the consolidated PDF. */
+function listApplicationDocuments(e) {
+  const auth = requireRole(e.parameter.token, ["admin"]);
+  if (!auth) return jsonResponse({ ok: false, error: "Unauthorized" });
+
+  const applicationId = e.parameter.applicationId;
+  const rows = readSheet("Admission_Documents")
+    .filter((r) => r.ApplicationId === applicationId)
+    .map((r) => ({
+      docType: r.DocType,
+      fileName: r.FileName,
+      mimeType: r.MimeType,
+      driveFileUrl: r.DriveFileUrl,
+      uploadedAt: r.UploadedAt,
     }));
 
   return jsonResponse({ ok: true, data: rows });

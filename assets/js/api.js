@@ -217,6 +217,10 @@ const Api = (() => {
     return realRequest("admin/admission/list", "GET", null, { token });
   }
 
+  async function getApplicationDocuments(token, applicationId) {
+    return realRequest("admin/admission/documents", "GET", null, { token, applicationId });
+  }
+
   async function getAdminDashboard(token) {
     return realRequest("admin/dashboard", "GET", null, { token });
   }
@@ -271,6 +275,7 @@ const Api = (() => {
     saveTeacherIaMarks,
     submitAdmissionApplication,
     getAdmissionApplications,
+    getApplicationDocuments,
     getAdminDashboard,
     getNotices,
     getAdminNotices,

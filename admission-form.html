@@ -541,16 +541,39 @@
       ? res.data
           .map(
             (a) => `
-        <div class="app-row">
-          <span><strong>${a.applicationId}</strong> — ${a.name} <span class="badge">${a.programType}</span></span>
-          <span style="display:flex; gap: var(--space-2);">
-            <a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.driveFolderUrl}" target="_blank" rel="noopener">Drive Folder</a>
-            ${a.consolidatedPdfUrl ? `<a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.consolidatedPdfUrl}" target="_blank" rel="noopener">PDF</a>` : ""}
-          </span>
+        <div>
+          <div class="app-row">
+            <span><strong>${a.applicationId}</strong> — ${a.name} <span class="badge">${a.programType}</span></span>
+            <span style="display:flex; gap: var(--space-2);">
+              <button type="button" class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" data-toggle-docs="${a.applicationId}">Documents</button>
+              <a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.driveFolderUrl}" target="_blank" rel="noopener">Drive Folder</a>
+            </span>
+          </div>
+          <div id="docs-${a.applicationId}" style="display:none; padding: var(--space-3) 0 var(--space-4);"></div>
         </div>`
           )
           .join("")
       : `<p class="form-note">No applications submitted yet.</p>`;
+
+    el.querySelectorAll("[data-toggle-docs]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const applicationId = btn.dataset.toggleDocs;
+        const box = document.getElementById(`docs-${applicationId}`);
+        if (box.style.display === "block") {
+          box.style.display = "none";
+          return;
+        }
+        box.style.display = "block";
+        box.innerHTML = `<div class="loading-row"><span class="spinner"></span><span>Loading…</span></div>`;
+        const docsRes = await Api.getApplicationDocuments(session.token, applicationId);
+        if (Session.handleAuthError(docsRes)) return;
+        box.innerHTML = docsRes.ok && docsRes.data.length
+          ? docsRes.data
+              .map((d) => `<div class="app-row" style="border-bottom:none; padding: var(--space-1) 0;"><span>${d.docType}</span><a href="${d.driveFileUrl}" target="_blank" rel="noopener">Open</a></div>`)
+              .join("")
+          : `<p class="form-note">No documents found.</p>`;
+      });
+    });
   }
 
   (async () => {

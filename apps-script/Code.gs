@@ -49,6 +49,7 @@ function route(e, method) {
       "POST:teacher/ia-marks": () => postTeacherIaMarks(e),
       "POST:admin/admission/submit": () => submitAdmissionApplication(e),
       "GET:admin/admission/list": () => listAdmissionApplications(e),
+      "GET:admin/admission/documents": () => listApplicationDocuments(e),
 
       "GET:admin/dashboard": () => getAdminDashboard(e),
       "GET:notices": () => getNotices(),
