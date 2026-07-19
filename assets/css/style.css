@@ -65,6 +65,10 @@
   --navy-3: #eef1f7;
   --blue: #0032a0;
   --sky: #1a72cc;
+  /* --link inherits the dark-mode value (#3d8bef, tuned bright for a dark
+     bg) unless overridden here — on this light bg it only hits 3.16:1,
+     failing WCAG AA's 4.5:1. Reuse --blue instead: already 9.89:1 here. */
+  --link: var(--blue);
   --gold: #b8791f;
   --gold-bright: #9c6414;
   --silver: #5b6572;
@@ -231,11 +235,12 @@ code {
 .nav-cta:hover { filter: brightness(1.06); }
 
 .theme-toggle {
+  /* 44px min — WCAG 2.5.5 touch-target size; was 38px */
   background: rgba(240, 245, 255, 0.06);
   border: 1px solid var(--border);
   color: var(--white);
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   min-height: auto;
   border-radius: 50%;
   display: flex;
@@ -319,7 +324,7 @@ body.nav-open { overflow: hidden; }
   .nav-links a, .nav-links button { display: block; width: 100%; padding: var(--space-3) 0; text-align: left; }
   .nav-links .nav-cta { padding: var(--space-3) var(--space-5); text-align: center; margin-top: var(--space-3); }
   .nav-links .btn-outline { width: auto; }
-  .nav-links .theme-toggle { display: inline-flex; width: 38px; height: 38px; padding: 0; margin-bottom: var(--space-2); }
+  .nav-links .theme-toggle { display: inline-flex; width: 44px; height: 44px; padding: 0; margin-bottom: var(--space-2); }
 
   .nav-backdrop.open { display: block; }
 }
