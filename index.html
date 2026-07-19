@@ -72,6 +72,7 @@
         preload="none"
         aria-hidden="true"
       >
+        <source src="https://drive.google.com/uc?export=download&id=1RAPbyC-mQ7o1dQoHbwiH72o-WnzrPDXs" type="video/mp4" />
         <source src="assets/video/campus-hero-bg.mp4" type="video/mp4" />
       </video>
     </div>
@@ -200,25 +201,28 @@
 <script src="assets/js/api.js"></script>
 <script src="assets/js/whatsapp.js"></script>
 <script>
-  // Self-hosted hero background video (licensed stock footage, landscape —
-  // object-fit:cover in CSS handles framing, no JS math needed unlike the
-  // old YouTube-iframe approach). Skipped entirely on narrow viewports,
-  // reduced-motion, and Save-Data connections so nobody pays for a 6MB
-  // download they can't see well or didn't ask to animate: the gradient
-  // overlay + .hero-video-bg's own background color is the fallback,
-  // already in place before this runs, so skipping just means "stay on
-  // the fallback." Paused via IntersectionObserver when scrolled out of
-  // view to avoid burning battery/CPU on an invisible video.
+  // Hero background video (licensed stock footage, landscape — object-fit:cover
+  // in CSS handles framing, no JS math needed unlike the old YouTube-iframe
+  // approach). Primary source is the copy stored in the college's Drive
+  // Media folder (drive.google.com/uc?export=download — resolves to a
+  // range-request-capable video/mp4 response, verified via curl before
+  // switching over); the repo-committed file is a second <source> so the
+  // hero still plays if Drive is ever unreachable. Plays on all screen sizes, including
+  // mobile — only skipped for reduced-motion and Save-Data connections
+  // (real accessibility/bandwidth signals, not a viewport-width guess): the
+  // gradient overlay + .hero-video-bg's own background color is the
+  // fallback, already in place before this runs, so skipping just means
+  // "stay on the fallback." Paused via IntersectionObserver when scrolled
+  // out of view to avoid burning battery/CPU on an invisible video.
   (function () {
     const video = document.getElementById("hero-video");
     const wrap = document.getElementById("hero-video-bg");
     if (!video || !wrap) return;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isNarrowViewport = window.matchMedia("(max-width: 767px)").matches;
     const saveData = navigator.connection && navigator.connection.saveData;
 
-    if (prefersReducedMotion || isNarrowViewport || saveData) return;
+    if (prefersReducedMotion || saveData) return;
 
     video.load();
     video.play().catch(() => {

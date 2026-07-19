@@ -59,6 +59,7 @@ function route(e, method) {
       "POST:admin/notices": () => postAdminNotice(e),
       "POST:admin/notices/delete": () => deleteAdminNotice(e),
       "POST:admin/settings": () => postAdminSettings(e),
+      "POST:admin/media/upload": () => uploadMediaFile(e),
     };
     const key = method + ":" + path;
     if (!handlers[key]) return jsonResponse({ ok: false, error: "Not found: " + key });
