@@ -324,6 +324,149 @@ function listAdmissionApplications(e) {
   return jsonResponse({ ok: true, data: rows });
 }
 
+/** Full stored record for one application — used to repopulate the print-summary template when regenerating a PDF (see recompileConsolidatedPdf). */
+function getAdmissionApplication(e) {
+  const auth = requireRole(e.parameter.token, ["admin"]);
+  if (!auth) return jsonResponse({ ok: false, error: "Unauthorized" });
+
+  const r = findRowByKey("Admission_Applications", "ApplicationId", e.parameter.applicationId);
+  if (!r) return jsonResponse({ ok: false, error: "Application not found" });
+
+  return jsonResponse({
+    ok: true,
+    data: {
+      applicationId: r.ApplicationId,
+      firstName: r.FirstName,
+      middleName: r.MiddleName,
+      lastName: r.LastName,
+      // DOB was written as a "DD/MM/YYYY" string, but Sheets auto-converts
+      // date-looking strings into real Date cells on write (the same quirk
+      // documented in CLAUDE.md for Attendance.Date/Fee_Structures.DueDate)
+      // — read back, it's a Date object, not the original string. Reformat
+      // rather than pass the raw ISO-with-timezone value through to the
+      // regenerated screenshot.
+      dob: r.DOB instanceof Date ? Utilities.formatDate(r.DOB, "Asia/Kolkata", "dd/MM/yyyy") : r.DOB,
+      fatherName: r.FatherName,
+      motherName: r.MotherName,
+      mobileNumber: r.MobileNumber,
+      email: r.Email,
+      present: { address: r.PresentAddress, city: r.PresentCity, state: r.PresentState, pincode: r.PresentPincode },
+      permanent: { address: r.PermanentAddress, city: r.PermanentCity, state: r.PermanentState, pincode: r.PermanentPincode },
+      programType: r.ProgramType,
+      driveFolderId: r.DriveFolderId,
+      consolidatedPdfStatus: r.ConsolidatedPdfStatus,
+    },
+  });
+}
+
+/**
+ * Rebuilds the consolidated PDF for an EXISTING application, using its
+ * already-uploaded documents (re-fetched from Drive by the file IDs stored
+ * in Admission_Documents — never re-uploaded, so this can't silently
+ * substitute a different file for one already on record) plus a freshly
+ * captured screenshot. For fixing an application whose first compile
+ * attempt produced a broken page (e.g. a blank screenshot from the
+ * off-screen html2canvas bug) without asking the admin to re-enter and
+ * re-upload everything from scratch.
+ */
+/** Deletes every Admission_Documents row matching both applicationId and docType (Sheets.gs's deleteRowByKey only matches a single column, not enough here since one applicationId spans many rows). */
+function deleteAdmissionDocumentRows(applicationId, docType) {
+  const sheet = getSpreadsheet().getSheetByName("Admission_Documents");
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const appIdx = headers.indexOf("ApplicationId");
+  const typeIdx = headers.indexOf("DocType");
+  for (let r = values.length - 1; r >= 1; r--) {
+    if (values[r][appIdx] === applicationId && values[r][typeIdx] === docType) {
+      sheet.deleteRow(r + 1);
+    }
+  }
+}
+
+function recompileConsolidatedPdf(e) {
+  const body = JSON.parse(e.postData.contents);
+  const auth = requireRole(body.token, ["admin"]);
+  if (!auth) return jsonResponse({ ok: false, error: "Unauthorized" });
+
+  const applicationId = body.applicationId;
+  const appRow = findRowByKey("Admission_Applications", "ApplicationId", applicationId);
+  if (!appRow) return jsonResponse({ ok: false, error: "Application not found" });
+  if (!appRow.DriveFolderId) return jsonResponse({ ok: false, error: "Application has no Drive folder on record" });
+
+  try {
+    const appFolder = DriveApp.getFolderById(appRow.DriveFolderId);
+    const docRows = readSheet("Admission_Documents").filter((d) => d.ApplicationId === applicationId);
+    const requiredTypes = REQUIRED_DOCS_BY_PROGRAM[appRow.ProgramType] || [];
+
+    const uploaded = requiredTypes
+      .map((docType) => docRows.find((d) => d.DocType === docType))
+      .filter(Boolean)
+      .map((d) => ({
+        docType: d.DocType,
+        fileName: d.FileName,
+        mimeType: d.MimeType,
+        blob: DriveApp.getFileById(d.DriveFileId).getBlob(),
+      }));
+
+    const missing = requiredTypes.filter((t) => !uploaded.find((u) => u.docType === t));
+    if (missing.length) {
+      return jsonResponse({ ok: false, error: "Cannot recompile — missing original document(s) on record: " + missing.join(", ") });
+    }
+
+    // Trash the previous screenshot/consolidated-PDF files (if any) AND
+    // remove their Admission_Documents rows — trashing the Drive file alone
+    // (an earlier version of this function) left a dead row behind pointing
+    // at a now-inaccessible file, which showed up as a confusing duplicate
+    // "Consolidated PDF" entry with a broken link in the documents list.
+    ["Screenshot", "Consolidated PDF"].forEach((docType) => {
+      docRows
+        .filter((d) => d.DocType === docType)
+        .forEach((old) => {
+          if (old.DriveFileId) {
+            try { DriveApp.getFileById(old.DriveFileId).setTrashed(true); } catch (ignored) {}
+          }
+        });
+      deleteAdmissionDocumentRows(applicationId, docType);
+    });
+
+    if (body.screenshotBase64) {
+      const shotBlob = Utilities.newBlob(Utilities.base64Decode(body.screenshotBase64), "image/png", applicationId + "_Screenshot.png");
+      const shotFile = appFolder.createFile(shotBlob);
+      appendRow("Admission_Documents", {
+        DocId: Utilities.getUuid(),
+        ApplicationId: applicationId,
+        DocType: "Screenshot",
+        FileName: shotBlob.getName(),
+        MimeType: "image/png",
+        DriveFileId: shotFile.getId(),
+        DriveFileUrl: shotFile.getUrl(),
+        UploadedAt: new Date(),
+      });
+    }
+
+    const compiled = compileConsolidatedPdf(appFolder, applicationId, body.screenshotBase64, uploaded, appRow.ProgramType);
+    updateRowByKey("Admission_Applications", "ApplicationId", applicationId, {
+      ConsolidatedPdfUrl: compiled.url,
+      ConsolidatedPdfStatus: "Compiled",
+    });
+    appendRow("Admission_Documents", {
+      DocId: Utilities.getUuid(),
+      ApplicationId: applicationId,
+      DocType: "Consolidated PDF",
+      FileName: applicationId + "_Consolidated_Admission_Application.pdf",
+      MimeType: "application/pdf",
+      DriveFileId: compiled.id,
+      DriveFileUrl: compiled.url,
+      UploadedAt: new Date(),
+    });
+
+    return jsonResponse({ ok: true, data: { consolidatedPdfUrl: compiled.url } });
+  } catch (err) {
+    logError("admin/admission/recompile", err);
+    return jsonResponse({ ok: false, error: "Recompile failed: " + err.message });
+  }
+}
+
 /** Every file uploaded/generated for one application — individual documents, the screenshot, and the consolidated PDF. */
 function listApplicationDocuments(e) {
   const auth = requireRole(e.parameter.token, ["admin"]);

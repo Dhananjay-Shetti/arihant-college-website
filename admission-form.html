@@ -52,28 +52,48 @@
 
   /* Off-screen (not display:none — html2canvas needs it actually laid out)
      printable summary, captured as page 1 of the compiled PDF. Styled as a
-     plain white document regardless of site theme, not the live form UI. */
+     plain white document regardless of site theme, not the live form UI.
+
+     IMPORTANT: this must be genuinely on-screen (not position:fixed with a
+     -9999px offset, not opacity:0, not visibility:hidden) while html2canvas
+     runs. All three of those "hide it off-screen" tricks are known
+     html2canvas failure modes that can silently produce a blank canvas —
+     that's exactly what happened to APP-2026-0007's compiled PDF (valid
+     file, blank page 1). #print-summary is the full-viewport backdrop,
+     toggled visible only for the ~1 frame it takes to capture
+     #print-summary-inner, which is the actual 794px content node passed to
+     html2canvas — kept off in normal operation via display:none. */
   #print-summary {
+    display: none;
     position: fixed;
-    left: -9999px;
-    top: 0;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(11, 21, 40, 0.92);
+    align-items: flex-start;
+    justify-content: center;
+    overflow: auto;
+    padding: 40px 20px;
+  }
+  #print-summary.visible { display: flex; }
+  #print-summary-inner {
     width: 794px;
+    max-width: 100%;
     background: #ffffff;
     color: #101418;
     font-family: "Barlow", system-ui, sans-serif;
     padding: 48px;
   }
-  #print-summary .ps-header { display:flex; align-items:center; gap:16px; border-bottom: 3px solid #0b2545; padding-bottom: 16px; margin-bottom: 24px; }
-  #print-summary .ps-header img { width: 56px; height: 56px; }
-  #print-summary .ps-header h2 { margin:0; color:#0b2545; font-size: 1.4rem; }
-  #print-summary .ps-header p { margin:0; color:#5b6572; font-size:0.85rem; }
-  #print-summary .ps-title { text-align:center; font-size:1.1rem; font-weight:700; color:#0b2545; margin-bottom: 24px; text-transform:uppercase; letter-spacing:0.05em; }
-  #print-summary .ps-section-title { font-size:0.85rem; font-weight:700; color:#d4a93a; text-transform:uppercase; letter-spacing:0.05em; margin: 20px 0 8px; border-bottom:1px solid #e5e8ec; padding-bottom:4px; }
-  #print-summary .ps-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
-  #print-summary .ps-row { font-size:0.9rem; }
-  #print-summary .ps-label { color:#5b6572; display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.03em; }
-  #print-summary .ps-value { color:#101418; font-weight:600; }
-  #print-summary .ps-footer { margin-top:32px; padding-top:16px; border-top:1px solid #e5e8ec; font-size:0.75rem; color:#5b6572; }
+  #print-summary-inner .ps-header { display:flex; align-items:center; gap:16px; border-bottom: 3px solid #0b2545; padding-bottom: 16px; margin-bottom: 24px; }
+  #print-summary-inner .ps-header img { width: 56px; height: 56px; }
+  #print-summary-inner .ps-header h2 { margin:0; color:#0b2545; font-size: 1.4rem; }
+  #print-summary-inner .ps-header p { margin:0; color:#5b6572; font-size:0.85rem; }
+  #print-summary-inner .ps-title { text-align:center; font-size:1.1rem; font-weight:700; color:#0b2545; margin-bottom: 24px; text-transform:uppercase; letter-spacing:0.05em; }
+  #print-summary-inner .ps-section-title { font-size:0.85rem; font-weight:700; color:#d4a93a; text-transform:uppercase; letter-spacing:0.05em; margin: 20px 0 8px; border-bottom:1px solid #e5e8ec; padding-bottom:4px; }
+  #print-summary-inner .ps-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
+  #print-summary-inner .ps-row { font-size:0.9rem; }
+  #print-summary-inner .ps-label { color:#5b6572; display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.03em; }
+  #print-summary-inner .ps-value { color:#101418; font-weight:600; }
+  #print-summary-inner .ps-footer { margin-top:32px; padding-top:16px; border-top:1px solid #e5e8ec; font-size:0.75rem; color:#5b6572; }
 </style>
 </head>
 <body>
@@ -228,35 +248,38 @@
         <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Submit Application</button>
       </form>
 
-      <!-- Off-screen only — rendered to a canvas via html2canvas right before
-           submit, becomes page 1 of the compiled PDF. Not the raw form UI. -->
+      <!-- Toggled visible (see captureFormScreenshot) only for the instant
+           html2canvas needs to capture #print-summary-inner. Not the raw
+           form UI — a purpose-built document view. -->
       <div id="print-summary">
-        <div class="ps-header">
-          <img src="assets/img/logo.svg" alt="" />
-          <div>
-            <h2>Arihant College</h2>
-            <p>Admission Application Record</p>
+        <div id="print-summary-inner">
+          <div class="ps-header">
+            <img src="assets/img/logo.svg" alt="" />
+            <div>
+              <h2>Arihant College</h2>
+              <p>Admission Application Record</p>
+            </div>
           </div>
+          <div class="ps-title" id="ps-program-title">Program: —</div>
+
+          <div class="ps-section-title">Personal Information</div>
+          <div class="ps-grid">
+            <div class="ps-row"><span class="ps-label">Full Name</span><span class="ps-value" id="ps-name">—</span></div>
+            <div class="ps-row"><span class="ps-label">Date of Birth</span><span class="ps-value" id="ps-dob">—</span></div>
+            <div class="ps-row"><span class="ps-label">Father's Name</span><span class="ps-value" id="ps-father">—</span></div>
+            <div class="ps-row"><span class="ps-label">Mother's Name</span><span class="ps-value" id="ps-mother">—</span></div>
+            <div class="ps-row"><span class="ps-label">Mobile Number</span><span class="ps-value" id="ps-mobile">—</span></div>
+            <div class="ps-row"><span class="ps-label">Email ID</span><span class="ps-value" id="ps-email">—</span></div>
+          </div>
+
+          <div class="ps-section-title">Present Address</div>
+          <div class="ps-row"><span class="ps-value" id="ps-present-address">—</span></div>
+
+          <div class="ps-section-title">Permanent Address</div>
+          <div class="ps-row"><span class="ps-value" id="ps-permanent-address">—</span></div>
+
+          <div class="ps-footer" id="ps-generated">Generated on —</div>
         </div>
-        <div class="ps-title" id="ps-program-title">Program: —</div>
-
-        <div class="ps-section-title">Personal Information</div>
-        <div class="ps-grid">
-          <div class="ps-row"><span class="ps-label">Full Name</span><span class="ps-value" id="ps-name">—</span></div>
-          <div class="ps-row"><span class="ps-label">Date of Birth</span><span class="ps-value" id="ps-dob">—</span></div>
-          <div class="ps-row"><span class="ps-label">Father's Name</span><span class="ps-value" id="ps-father">—</span></div>
-          <div class="ps-row"><span class="ps-label">Mother's Name</span><span class="ps-value" id="ps-mother">—</span></div>
-          <div class="ps-row"><span class="ps-label">Mobile Number</span><span class="ps-value" id="ps-mobile">—</span></div>
-          <div class="ps-row"><span class="ps-label">Email ID</span><span class="ps-value" id="ps-email">—</span></div>
-        </div>
-
-        <div class="ps-section-title">Present Address</div>
-        <div class="ps-row"><span class="ps-value" id="ps-present-address">—</span></div>
-
-        <div class="ps-section-title">Permanent Address</div>
-        <div class="ps-row"><span class="ps-value" id="ps-permanent-address">—</span></div>
-
-        <div class="ps-footer" id="ps-generated">Generated on —</div>
       </div>
 
       <div class="card" data-reveal style="margin-top: var(--space-7);">
@@ -320,7 +343,15 @@
    * missing screenshot shouldn't block the rest of the submission (the
    * documents and application data matter more than this cosmetic page).
    */
+  // Two animation-frame ticks reliably land after the browser has actually
+  // painted the just-shown overlay — capturing on the same tick display:flex
+  // was set is a race that can also produce a blank canvas.
+  function nextPaint() {
+    return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
   async function captureFormScreenshot(payload, name) {
+    const overlay = document.getElementById("print-summary");
     try {
       document.getElementById("ps-program-title").textContent = "Program Applied For: " + payload.programType;
       document.getElementById("ps-name").textContent = name;
@@ -333,11 +364,25 @@
       document.getElementById("ps-permanent-address").textContent = formatAddress(payload.permanent);
       document.getElementById("ps-generated").textContent = "Generated on " + new Date().toLocaleString("en-IN");
 
-      const canvas = await html2canvas(document.getElementById("print-summary"), { scale: 2, backgroundColor: "#ffffff" });
-      return canvas.toDataURL("image/png").split(",")[1];
+      overlay.classList.add("visible");
+      await nextPaint();
+
+      const canvas = await html2canvas(document.getElementById("print-summary-inner"), { scale: 2, backgroundColor: "#ffffff", logging: false });
+      const dataUrl = canvas.toDataURL("image/png");
+
+      // A canvas that failed to render real content still produces a valid
+      // (tiny) data URL — catch that case explicitly instead of trusting
+      // "no exception was thrown" the way the previous version did.
+      if (!dataUrl || dataUrl.length < 5000) {
+        console.error("Screenshot capture produced a suspiciously small image, treating as failed:", dataUrl.length, "chars");
+        return null;
+      }
+      return dataUrl.split(",")[1];
     } catch (err) {
       console.error("Screenshot capture failed, continuing without it:", err);
       return null;
+    } finally {
+      overlay.classList.remove("visible");
     }
   }
 
@@ -544,9 +589,10 @@
         <div>
           <div class="app-row">
             <span><strong>${a.applicationId}</strong> — ${a.name} <span class="badge">${a.programType}</span></span>
-            <span style="display:flex; gap: var(--space-2);">
+            <span style="display:flex; gap: var(--space-2); flex-wrap:wrap;">
               <button type="button" class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" data-toggle-docs="${a.applicationId}">Documents</button>
               <a class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" href="${a.driveFolderUrl}" target="_blank" rel="noopener">Drive Folder</a>
+              <button type="button" class="btn btn-outline" style="padding: var(--space-2) var(--space-4); min-height:auto;" data-regenerate="${a.applicationId}">Regenerate PDF</button>
             </span>
           </div>
           <div id="docs-${a.applicationId}" style="display:none; padding: var(--space-3) 0 var(--space-4);"></div>
@@ -556,24 +602,73 @@
       : `<p class="form-note">No applications submitted yet.</p>`;
 
     el.querySelectorAll("[data-toggle-docs]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const applicationId = btn.dataset.toggleDocs;
-        const box = document.getElementById(`docs-${applicationId}`);
-        if (box.style.display === "block") {
-          box.style.display = "none";
-          return;
-        }
-        box.style.display = "block";
-        box.innerHTML = `<div class="loading-row"><span class="spinner"></span><span>Loading…</span></div>`;
-        const docsRes = await Api.getApplicationDocuments(session.token, applicationId);
-        if (Session.handleAuthError(docsRes)) return;
-        box.innerHTML = docsRes.ok && docsRes.data.length
-          ? docsRes.data
-              .map((d) => `<div class="app-row" style="border-bottom:none; padding: var(--space-1) 0;"><span>${d.docType}</span><a href="${d.driveFileUrl}" target="_blank" rel="noopener">Open</a></div>`)
-              .join("")
-          : `<p class="form-note">No documents found.</p>`;
-      });
+      btn.addEventListener("click", () => toggleDocuments(btn.dataset.toggleDocs));
     });
+
+    el.querySelectorAll("[data-regenerate]").forEach((btn) => {
+      btn.addEventListener("click", () => regenerateConsolidatedPdf(btn.dataset.regenerate, btn));
+    });
+  }
+
+  async function toggleDocuments(applicationId) {
+    const box = document.getElementById(`docs-${applicationId}`);
+    if (box.style.display === "block") {
+      box.style.display = "none";
+      return;
+    }
+    box.style.display = "block";
+    box.innerHTML = `<div class="loading-row"><span class="spinner"></span><span>Loading…</span></div>`;
+    const docsRes = await Api.getApplicationDocuments(session.token, applicationId);
+    if (Session.handleAuthError(docsRes)) return;
+    box.innerHTML = docsRes.ok && docsRes.data.length
+      ? docsRes.data
+          .map((d) => `<div class="app-row" style="border-bottom:none; padding: var(--space-1) 0;"><span>${d.docType}</span><a href="${d.driveFileUrl}" target="_blank" rel="noopener">Open</a></div>`)
+          .join("")
+      : `<p class="form-note">No documents found.</p>`;
+  }
+
+  /**
+   * Rebuilds the consolidated PDF for an already-submitted application —
+   * fetches the stored record, repopulates the same #print-summary
+   * template used at submit time, recaptures it (with the fixed on-screen
+   * technique), and asks the backend to recompile using the original
+   * uploaded documents. Fixes an application whose first PDF came out with
+   * a blank screenshot page without re-entering or re-uploading anything.
+   */
+  async function regenerateConsolidatedPdf(applicationId, btn) {
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner spinner-dark"></span> Regenerating…`;
+
+    try {
+      const appRes = await Api.getAdmissionApplication(session.token, applicationId);
+      if (Session.handleAuthError(appRes)) return;
+      if (!appRes.ok) {
+        alert(appRes.error);
+        return;
+      }
+
+      const record = appRes.data;
+      const fullName = [record.firstName, record.middleName, record.lastName].filter(Boolean).join(" ");
+      const screenshotBase64 = await captureFormScreenshot(record, fullName);
+      if (!screenshotBase64) {
+        alert("Screenshot capture failed again — the compiled PDF was not regenerated. Check the browser console for details.");
+        return;
+      }
+
+      const res = await Api.recompileConsolidatedPdf(session.token, applicationId, screenshotBase64);
+      if (Session.handleAuthError(res)) return;
+      if (!res.ok) {
+        alert("Regenerate failed: " + res.error);
+        return;
+      }
+
+      alert("Consolidated PDF regenerated successfully.");
+      await loadRecentApplications();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   }
 
   (async () => {

@@ -221,6 +221,14 @@ const Api = (() => {
     return realRequest("admin/admission/documents", "GET", null, { token, applicationId });
   }
 
+  async function getAdmissionApplication(token, applicationId) {
+    return realRequest("admin/admission/get", "GET", null, { token, applicationId });
+  }
+
+  async function recompileConsolidatedPdf(token, applicationId, screenshotBase64) {
+    return realRequest("admin/admission/recompile", "POST", { token, applicationId, screenshotBase64 });
+  }
+
   async function getAdminDashboard(token) {
     return realRequest("admin/dashboard", "GET", null, { token });
   }
@@ -276,6 +284,8 @@ const Api = (() => {
     submitAdmissionApplication,
     getAdmissionApplications,
     getApplicationDocuments,
+    getAdmissionApplication,
+    recompileConsolidatedPdf,
     getAdminDashboard,
     getNotices,
     getAdminNotices,
