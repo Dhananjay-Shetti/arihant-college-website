@@ -90,6 +90,10 @@
 <script src="assets/js/session.js"></script>
 <script src="assets/js/whatsapp.js"></script>
 <script>
+  if (new URLSearchParams(window.location.search).get("expired") === "1") {
+    document.getElementById("login-alert").innerHTML = `<div class="alert alert-info">Your session expired. Please sign in again.</div>`;
+  }
+
   let role = "student";
   const identifierLabels = {
     student: "Admission ID, Mobile, or Email",

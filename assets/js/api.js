@@ -35,13 +35,54 @@ const Api = (() => {
     return res.json();
   }
 
+  /**
+   * Short-TTL read cache (sessionStorage — per tab, cleared on tab close)
+   * for content that rarely changes within a single visit: Settings,
+   * Courses, Notices. Cuts the homepage down to zero extra Sheet reads on
+   * repeat views/navigations within the TTL window instead of refetching
+   * every time. Admin writes to these (saveAdminSettings/saveAdminNotice/
+   * deleteAdminNotice) bust the matching key so same-tab edits show up
+   * immediately rather than waiting out the TTL.
+   */
+  const CACHE_TTL_MS = 5 * 60 * 1000;
+
+  function cacheGet(key) {
+    try {
+      const raw = sessionStorage.getItem("cache:" + key);
+      if (!raw) return null;
+      const entry = JSON.parse(raw);
+      if (Date.now() > entry.expiresAt) return null;
+      return entry.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function cacheSet(key, data) {
+    try {
+      sessionStorage.setItem("cache:" + key, JSON.stringify({ data, expiresAt: Date.now() + CACHE_TTL_MS }));
+    } catch (e) {
+      // sessionStorage unavailable (private mode / quota) — just skip caching.
+    }
+  }
+
+  function cacheClear(key) {
+    try {
+      sessionStorage.removeItem("cache:" + key);
+    } catch (e) {}
+  }
+
   async function getSettings() {
     if (CONFIG.MOCK_MODE) {
       const db = await loadMockDb();
       await delay();
       return { ok: true, data: db.settings };
     }
-    return realRequest("settings");
+    const cached = cacheGet("settings");
+    if (cached) return cached;
+    const res = await realRequest("settings");
+    if (res.ok) cacheSet("settings", res);
+    return res;
   }
 
   async function getCourses() {
@@ -50,7 +91,11 @@ const Api = (() => {
       await delay();
       return { ok: true, data: db.courses.filter((c) => c.Active) };
     }
-    return realRequest("courses");
+    const cached = cacheGet("courses");
+    if (cached) return cached;
+    const res = await realRequest("courses");
+    if (res.ok) cacheSet("courses", res);
+    return res;
   }
 
   async function getFeeStructure(courseId) {
@@ -152,12 +197,28 @@ const Api = (() => {
     return realRequest("teacher/attendance", "POST", { token, courseId, date, records });
   }
 
+  async function getStudentIaMarks(token) {
+    return realRequest("student/ia-marks", "GET", null, { token });
+  }
+
+  async function getTeacherIaMarks(token, course, subject, component) {
+    return realRequest("teacher/ia-marks", "GET", null, { token, course, subject, component });
+  }
+
+  async function saveTeacherIaMarks(token, courseId, subject, component, maxMarks, records) {
+    return realRequest("teacher/ia-marks", "POST", { token, courseId, subject, component, maxMarks, records });
+  }
+
   async function getAdminDashboard(token) {
     return realRequest("admin/dashboard", "GET", null, { token });
   }
 
   async function getNotices() {
-    return realRequest("notices");
+    const cached = cacheGet("notices");
+    if (cached) return cached;
+    const res = await realRequest("notices");
+    if (res.ok) cacheSet("notices", res);
+    return res;
   }
 
   async function getAdminNotices(token) {
@@ -165,15 +226,21 @@ const Api = (() => {
   }
 
   async function saveAdminNotice(token, notice) {
-    return realRequest("admin/notices", "POST", { token, ...notice });
+    const res = await realRequest("admin/notices", "POST", { token, ...notice });
+    if (res.ok) cacheClear("notices");
+    return res;
   }
 
   async function deleteAdminNotice(token, noticeId) {
-    return realRequest("admin/notices/delete", "POST", { token, noticeId });
+    const res = await realRequest("admin/notices/delete", "POST", { token, noticeId });
+    if (res.ok) cacheClear("notices");
+    return res;
   }
 
   async function saveAdminSettings(token, updates) {
-    return realRequest("admin/settings", "POST", { token, updates });
+    const res = await realRequest("admin/settings", "POST", { token, updates });
+    if (res.ok) cacheClear("settings");
+    return res;
   }
 
   return {
@@ -191,6 +258,9 @@ const Api = (() => {
     getTeacherDashboard,
     getTeacherStudents,
     markAttendance,
+    getStudentIaMarks,
+    getTeacherIaMarks,
+    saveTeacherIaMarks,
     getAdminDashboard,
     getNotices,
     getAdminNotices,

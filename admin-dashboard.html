@@ -127,6 +127,7 @@
 
   async function loadDashboard() {
     const res = await Api.getAdminDashboard(session.token);
+    if (Session.handleAuthError(res)) return;
     if (!res.ok) {
       document.querySelector("main .container").innerHTML = `<div class="alert alert-error">${res.error}</div>`;
       return;

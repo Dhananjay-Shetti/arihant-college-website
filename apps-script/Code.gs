@@ -44,6 +44,9 @@ function route(e, method) {
       "GET:teacher/dashboard": () => getTeacherDashboard(e),
       "GET:teacher/students": () => getTeacherStudents(e),
       "POST:teacher/attendance": () => markAttendance(e),
+      "GET:student/ia-marks": () => getStudentIaMarks(e),
+      "GET:teacher/ia-marks": () => getTeacherIaMarks(e),
+      "POST:teacher/ia-marks": () => postTeacherIaMarks(e),
 
       "GET:admin/dashboard": () => getAdminDashboard(e),
       "GET:notices": () => getNotices(),

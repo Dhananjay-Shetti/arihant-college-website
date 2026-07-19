@@ -28,6 +28,8 @@ function setupSheets() {
     Sessions: ["Token", "Role", "UserId", "IssuedAt", "ExpiresAt"],
     Attendance: ["AttendanceId", "StudentId", "CourseId", "Date", "Status", "MarkedBy", "Timestamp"],
     Notices: ["NoticeId", "Title", "Body", "Date", "Active", "Order"],
+    IA_Marks: ["IaId", "StudentId", "CourseId", "Subject", "Component", "MaxMarks", "MarksObtained", "EnteredBy", "UpdatedAt"],
+    IA_Marks_Audit: ["AuditId", "IaId", "StudentId", "Subject", "Component", "OldMarks", "NewMarks", "ChangedBy", "ChangedAt"],
   };
 
   Object.keys(schemas).forEach((name) => {
@@ -62,7 +64,7 @@ function credential(password) {
  * a fresh known-good set rather than trying to merge.
  */
 function resetDemoData() {
-  ["Departments", "Courses", "Fee_Structures", "Students", "Teachers", "Admins", "Notices", "Attendance", "Payments_Log"].forEach(clearDataRows);
+  ["Departments", "Courses", "Fee_Structures", "Students", "Teachers", "Admins", "Notices", "Attendance", "Payments_Log", "IA_Marks", "IA_Marks_Audit"].forEach(clearDataRows);
 
   const ss = getSpreadsheet();
 
@@ -144,6 +146,13 @@ function resetDemoData() {
     ["AC-SEED-0001", "", "Riya Sharma", "9812345670", "riya.sharma@example.com", "BSC-CS", "FEE-BSC-CS-S1", 45000, "SUCCESS", new Date("2026-06-01"), new Date("2026-06-01"), ""],
     ["AC-SEED-0002", "", "Arjun Mehta", "9822233344", "arjun.mehta@example.com", "BCOM", "FEE-BCOM-Y1", 35000, "PENDING", new Date("2026-07-10"), new Date("2026-07-10"), ""],
     ["AC-SEED-0003", "", "Sneha Patil", "9900112233", "sneha.patil@example.com", "BBA", "FEE-BBA-Y1", 55000, "FAILED", new Date("2026-07-05"), new Date("2026-07-05"), ""],
+  ]);
+
+  ss.getSheetByName("IA_Marks").getRange(2, 1, 4, 9).setValues([
+    ["IA-SEED-0001", "STU-0001", "BSC-CS", "Data Structures", "IA1", 20, 17, "TCH-0001", new Date()],
+    ["IA-SEED-0002", "STU-0001", "BSC-CS", "Data Structures", "IA2", 20, 18, "TCH-0001", new Date()],
+    ["IA-SEED-0003", "STU-0001", "BSC-CS", "Discrete Mathematics", "IA1", 20, 15, "TCH-0001", new Date()],
+    ["IA-SEED-0004", "STU-0004", "BCA", "Data Structures", "IA1", 20, 16, "TCH-0001", new Date()],
   ]);
 
   ensureSettingsKeys({
