@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (!t) t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Fee Receipt — Arihant College</title>
@@ -38,6 +47,7 @@
         <span class="hamburger"><span></span><span></span><span></span></span>
       </button>
       <ul class="nav-links" id="nav-links">
+      <li><button class="theme-toggle" type="button" aria-label="Toggle theme"></button></li>
       <li><a href="student-dashboard.html">Back to Dashboard</a></li>
     </ul>
   </div>
@@ -57,6 +67,7 @@
   </section>
 </main>
 
+<script src="assets/js/theme.js"></script>
 <script src="assets/js/nav.js"></script>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/api.js"></script>
